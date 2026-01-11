@@ -13,7 +13,7 @@ st.set_page_config(page_title="Eko-Risk AI O'zbekiston", layout="wide")
 
 # Google Auth sozlamasi - To'g'ri format
 # Google Auth sozlamasi - To'g'ri va yagona blok
-   auth = Authenticate(
+auth = Authenticate(
     secret_key="random_secret_string_123",
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
@@ -90,5 +90,6 @@ if not st.session_state.get('connected'):
         auth.login()
 else:
     main()
+
 
 
