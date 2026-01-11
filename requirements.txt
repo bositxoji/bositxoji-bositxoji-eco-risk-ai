@@ -5,3 +5,6 @@ streamlit-folium
 google-generativeai
 groq
 fpdf
+openpyxl
+python-docx
+PyPDF2
