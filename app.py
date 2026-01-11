@@ -1,72 +1,80 @@
 import streamlit as st
-import google.generativeai as genai
+from groq import Groq
 
-# 1. SAHIFA SOZLAMASI
+# 1. SAHIFA SOZLAMALARI
 st.set_page_config(page_title="Eko-Portal AI", layout="wide")
 
-# 2. AI MODELINI SOZLASH (Xatolikni yo'qotish uchun maxsus usul)
+# 2. GROQ AI FUNKSIYASI (Llama 3 Model)
 def get_ai_analysis(prompt):
     try:
-        genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-        # Rasmdagi 404 xatosini (image_3dd152.png) yo'qotish uchun 
-        # eng barqaror model nomidan foydalanamiz
-        model = genai.GenerativeModel('gemini-pro') 
-        response = model.generate_content(prompt)
-        return response.text
+        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return completion.choices[0].message.content
     except Exception as e:
-        return f"AI xatolik berdi. Iltimos, API kalitini tekshiring. Xato: {str(e)}"
+        return f"AI xatolik: {str(e)}"
 
-# 3. SIDEBAR (BOSHQRUV VA MUALLIFLAR)
+# 3. YON PANEL (SIDEBAR) - TUGMALAR VA MUALLIFLAR
 with st.sidebar:
-    st.title("📌 Boshqaruv")
-    # Siz aytganingizdek, xarita va AI uchun alohida tugmalar
-    if st.button("🌡 Havo Sifati (Xarita)"):
-        st.session_state.view = "map"
-    if st.button("🤖 AI Risk Analizi"):
-        st.session_state.view = "ai_analysis"
+    st.title("🚀 Boshqaruv")
     
+    # Havo sifati tugmasi (Xaritani ichiga oladi)
+    if st.button("🌡 Havo Sifati (Xarita)", use_container_width=True):
+        st.session_state.page = "map"
+        
+    # AI Risk Analizi tugmasi (Gemini o'rniga Groq Llama ulanadi)
+    if st.button("🤖 AI Risk Analizi", use_container_width=True):
+        st.session_state.page = "ai"
+
     st.markdown("---")
+    # Mualliflar siz aytgan joyda
     st.write("🎓 **Loyiha mualliflari:**")
     st.caption("Prof. Egamberdiyev Elmurod A.")
     st.caption("PhD Ataxo'jayev Abdubositxo'ja")
 
-# 4. ASOSIY QISM
-if 'view' not in st.session_state: st.session_state.view = "news"
-if 'active_news' not in st.session_state: st.session_state.active_news = None
+# 4. ASOSIY OYNA BOSHQARUVI
+if 'page' not in st.session_state: st.session_state.page = "news"
+if 'selected_news' not in st.session_state: st.session_state.selected_news = None
 
-col_main, col_news = st.columns([0.7, 0.3])
+main_col, side_col = st.columns([0.7, 0.3])
 
-with col_main:
-    # XARITA (TUGMA BOSILGANDA)
-    if st.session_state.view == "map":
-        st.header("🗺 Global Havo Sifati (Real-vaqt)")
-        st.components.v1.iframe("https://aqicn.org/map/world/", height=650)
+with main_col:
+    # A. XARITA BO'LIMI
+    if st.session_state.page == "map":
+        st.header("🗺 Global Havo Sifati (aqicn.org)")
+        st.components.v1.iframe("https://aqicn.org/map/world/", height=700)
     
-    # AI TAHLIL (TUGMA BOSILGANDA)
-    elif st.session_state.view == "ai_analysis":
-        st.header("🤖 AI Risk Analizi va Maqola")
-        topic = st.text_area("Tahlil uchun ma'lumot kiriting:")
-        if st.button("Maqola va grafik tayyorlash"):
-            with st.spinner("AI tahlil qilmoqda..."):
-                res = get_ai_analysis(f"{topic} haqida professional tahlil, maqola va grafik ko'rsatkichlar ber.")
+    # B. AI RISK ANALIZI (MAQOLA VA GRAFIK)
+    elif st.session_state.page == "ai":
+        st.header("🤖 AI Risk Analizi va Ilmiy Maqola")
+        user_input = st.text_area("Tahlil uchun mavzuni kiriting (masalan: Orol dengizi muammosi):", height=150)
+        if st.button("Tahlilni va maqolani tayyorlash"):
+            with st.spinner("AI ma'lumotlarni tahlil qilmoqda..."):
+                res = get_ai_analysis(f"{user_input} bo'yicha ekologik risk analizi, batafsil maqola va matnli grafik tayyorla.")
                 st.markdown(res)
 
-    # YANGILIK MATNI
-    elif st.session_state.active_news:
-        news = st.session_state.active_news
-        st.header(news['title'])
-        st.write(news['text'])
-        if st.button("⬅️ Orqaga"): st.session_state.active_news = None; st.rerun()
+    # D. YANGILIKLARNI O'QISH
+    elif st.session_state.selected_news:
+        n = st.session_state.selected_news
+        st.header(n['title'])
+        st.write(f"**Manba:** {n['source']} | **Sana:** {n['date']}")
+        st.divider()
+        st.write(n['body'])
+        if st.button("⬅️ Orqaga"):
+            st.session_state.selected_news = None
+            st.rerun()
+    else:
+        st.info("Xush kelibsiz! Chap menyudan bo'limni tanlang yoki yangilikni tanlang.")
 
-with col_news:
+with side_col:
     st.subheader("📰 Yangiliklar")
-    # Sodda yangiliklar (AI-siz)
     news_list = [
-        {"title": "UNEP: Plastik hisoboti", "text": "Plastik ifloslanish darajasi ortib bormoqda..."},
-        {"title": "NASA: Ozon qatlami", "text": "Ozon qatlamida ijobiy o'zgarishlar kuzatildi..."}
+        {"source": "UNEP", "date": "11.01.2026", "title": "Plastik ifloslanish", "body": "UNEP hisobotiga ko'ra, plastik miqdori okeanlarda oshmoqda..."},
+        {"source": "NASA", "date": "11.01.2026", "title": "Ozon qatlami", "body": "NASA ozon teshigining kichrayishini tasdiqladi..."}
     ]
-    for n in news_list:
-        if st.button(n['title'], use_container_width=True):
-            st.session_state.active_news = n
-            st.session_state.view = "news_detail"
+    for news in news_list:
+        if st.button(f"📌 {news['source']}: {news['title']}", use_container_width=True):
+            st.session_state.selected_news = news
             st.rerun()
