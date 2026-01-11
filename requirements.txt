@@ -8,3 +8,4 @@ fpdf
 openpyxl
 python-docx
 PyPDF2
+plotly
