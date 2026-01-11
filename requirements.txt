@@ -1,12 +1,9 @@
 streamlit
+groq
 pandas
+plotly
 folium
 streamlit-folium
-google-generativeai
-groq
-fpdf
-openpyxl
 python-docx
 PyPDF2
-plotly
-folium.plugins
+openpyxl
