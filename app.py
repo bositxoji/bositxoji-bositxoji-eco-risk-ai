@@ -5,73 +5,109 @@ import numpy as np
 # 1. Sahifa sozlamalari
 st.set_page_config(page_title="Eko-Risk AI O'zbekiston", layout="wide")
 
-# 2. ORQA FON VA MUALLIF YOZUG'I UCHUN CSS
-st.markdown(
-    """
+# 2. Tun va Kun funksiyasi uchun session state
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'dark'
+
+def toggle_theme():
+    st.session_state.theme = 'light' if st.session_state.theme == 'dark' else 'dark'
+
+# 3. DINAMIK DIZAYN (CSS)
+# Orqa fonda harakatlanuvchi koinot videosi va ideal yashil sidebar
+theme_style = {
+    'dark': {
+        'bg_overlay': 'rgba(0, 0, 0, 0.7)',
+        'text_color': '#FFFFFF',
+        'sidebar_bg': '#1E3932' # To'q, ammo chiroyli yashil (Starbucks yashili kabi)
+    },
+    'light': {
+        'bg_overlay': 'rgba(255, 255, 255, 0.5)',
+        'text_color': '#000000',
+        'sidebar_bg': '#2D5A27' # Biroq yorqinroq yashil
+    }
+}
+
+current = theme_style[st.session_state.theme]
+
+st.markdown(f"""
     <style>
-    /* Orqa fonga Yer rasmini qo'yish */
-    .stApp {
-        background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
-                    url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-    }
-
-    /* O'ng pastki burchakka muallif yozuvi */
-    .footer {
+    /* Harakatlanuvchi video fon */
+    #myVideo {{
         position: fixed;
-        right: 10px;
-        bottom: 10px;
+        right: 0; bottom: 0;
+        min-width: 100%; min-height: 100%;
+        z-index: -1;
+    }}
+
+    .stApp {{
+        background: {current['bg_overlay']};
+    }}
+
+    /* Sidebar dizayni - Siz so'ragan ideal yashil */
+    [data-testid="stSidebar"] {{
+        background-color: {current['sidebar_bg']} !important;
+        border-right: 1px solid #4B5E52;
+    }}
+
+    /* Matn ranglari */
+    h1, h2, h3, p, span, label {{
+        color: {current['text_color']} !important;
+    }}
+
+    /* Footer - Abdubositxo'ja */
+    .footer {{
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
         color: white;
-        font-family: sans-serif;
-        font-size: 14px;
         font-weight: bold;
-        background-color: rgba(0, 0, 0, 0.5);
-        padding: 5px 10px;
-        border-radius: 5px;
+        background: rgba(0,0,0,0.5);
+        padding: 5px 15px;
+        border-radius: 20px;
         z-index: 1000;
-    }
-
-    /* Matnlarni oq rangga o'tkazish (ko'rinishi uchun) */
-    h1, h2, h3, p, .stMarkdown {
-        color: white !important;
-    }
+    }}
     </style>
+
+    <video autoplay muted loop id="myVideo">
+        <source src="https://v.ftcdn.net/02/91/52/35/700_F_291523533_V3Mv9RkSOfjP3X8A8wWc8Lp0Qz9B9F6l_ST.mp4" type="video/mp4">
+    </video>
+
     <div class="footer">by Abdubositxo'ja</div>
-    """,
-    unsafe_allow_html=True
-)
+    """, unsafe_allow_html=True)
 
-# 3. Login holati
-if 'logged_in' not in st.session_state:
-    st.session_state['logged_in'] = False
-
-# 4. Sidebar
+# 4. Sidebar elementlari
 st.sidebar.image("https://cdn-icons-png.flaticon.com/512/2913/2913520.png", width=80)
 st.sidebar.title("Boshqaruv")
+
+# Tun/Kun tugmasi
+mode_icon = "☀️ Kun" if st.session_state.theme == 'dark' else "🌙 Tun"
+if st.sidebar.button(mode_icon):
+    toggle_theme()
+    st.rerun()
+
+# Login qismi
+if 'logged_in' not in st.session_state:
+    st.session_state['logged_in'] = False
 
 if not st.session_state['logged_in']:
     if st.sidebar.button("Google orqali kirish"):
         st.session_state['logged_in'] = True
         st.rerun()
 else:
-    st.sidebar.success("✅ Kirildi")
+    st.sidebar.success("✅ Tizim faol")
     if st.sidebar.button("Chiqish"):
         st.session_state['logged_in'] = False
         st.rerun()
 
-# 5. Asosiy mazmun
+# 5. Asosiy sahifa
 st.title("🌍 Global Ekologik Risklar va AI Tahlili")
 
 if st.session_state['logged_in']:
-    st.write("### Xush kelibsiz! Ma'lumotlar yuklandi.")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("📊 Statistik ko'rsatkich")
-        st.bar_chart(np.random.randn(10, 2))
-    with col2:
-        st.subheader("🔬 AI Analiz")
+    st.write(f"### Hozirgi rejim: {st.session_state.theme.upper()}")
+    t1, t2 = st.tabs(["📊 Statistika", "🔬 AI Bashorat"])
+    with t1:
+        st.bar_chart(np.random.randn(10, 3))
+    with t2:
         st.line_chart(np.random.randn(10, 2))
 else:
-    st.warning("Iltimos, tizimga kirish uchun chap paneldagi tugmani bosing.")
+    st.warning("⚠️ Kirish uchun chap paneldagi tugmani bosing.")
