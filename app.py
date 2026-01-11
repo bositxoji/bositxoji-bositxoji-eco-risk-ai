@@ -1,113 +1,98 @@
 import streamlit as st
 from groq import Groq
 import pandas as pd
-import plotly.express as px
 import folium
 from folium.plugins import HeatMap
 from streamlit_folium import folium_static
 
-# 1. SAHIFA KONFIGURATSIYASI
-st.set_page_config(page_title="Eco-Portal Pro AI", layout="wide")
+# 1. SAHIFA SOZLAMALARI
+st.set_page_config(page_title="Eco-Portal Global", layout="wide")
 
-# 2. DINAMIK TIL TIZIMI
-languages = {
+# 2. TIL LUG'ATI (TO'LIQ DINAMIK)
+lang = st.sidebar.selectbox("🌐 Til / Language", ["UZ", "EN", "RU"])
+t_dict = {
     "UZ": {
-        "title": "Eco-System Pro",
-        "menu": ["Global AQI Map", "Carbon Footprint", "Issiqlik Xaritasi", "AI Akademik Tahlil", "PESTEL Strategiya", "IoT Sensorlar", "Tarixiy Dinamika", "AI Ekspert Chat"],
-        "btn": "Tahlil qilish", "loading": "AI tahlil qilmoqda, kuting...", "error": "API kalit topilmadi!"
+        "menu": ["AQI Xaritasi", "Carbon Tahlil", "Issiqlik Xaritasi", "AI Akademik", "PESTEL Strategiya", "IoT Sensorlar", "Tarixiy Dinamika", "AI Chat"],
+        "iot_uz": "O'zbekistonning 12 ta viloyati", "iot_gl": "Global 20 ta shahar", "year": "Yil:", "btn": "Tahlil"
     },
     "EN": {
-        "title": "Eco-System Global",
-        "menu": ["Global AQI Map", "Carbon Footprint", "Heatmap Analysis", "AI Academic Analysis", "PESTEL Strategy", "IoT Sensors", "Historical Dynamics", "AI Expert Chat"],
-        "btn": "Run Analysis", "loading": "AI is analyzing, please wait...", "error": "API Key not found!"
+        "menu": ["AQI Map", "Carbon Analysis", "Heatmap", "AI Academic", "PESTEL Strategy", "IoT Sensors", "Historical Dynamics", "AI Chat"],
+        "iot_uz": "12 Regions of Uzbekistan", "iot_gl": "Global 20 Cities", "year": "Year:", "btn": "Analyze"
     },
     "RU": {
-        "title": "Эко-Система Про",
-        "menu": ["AQI Карта мира", "Углеродный след", "Тепловая карта", "AI Академический анализ", "PESTEL Стратегия", "IoT Сенсоры", "Историческая динамика", "AI Эксперт Чат"],
-        "btn": "Запустить анализ", "loading": "AI анализирует, подождите...", "error": "API ключ не найден!"
+        "menu": ["AQI Карта", "Carbon Анализ", "Тепловая карта", "AI Академик", "PESTEL Стратегия", "IoT Сенсоры", "История", "AI Чат"],
+        "iot_uz": "12 областей Узбекистана", "iot_gl": "20 городов мира", "year": "Год:", "btn": "Анализ"
     }
 }
+t = t_dict[lang]
 
-lang_code = st.sidebar.selectbox("🌐 Til / Language", ["UZ", "EN", "RU"])
-t = languages[lang_code]
+# 3. SIDEBAR NAVIGATSIYA
+with st.sidebar:
+    st.title("🌱 Eco Dashboard")
+    menu = st.radio("Bo'limni tanlang:", t["menu"])
+    st.markdown("---")
+    st.caption("Mualliflar: Prof. Egamberdiyev E.A. | PhD Ataxo'jayev A.")
 
-# 3. AI FUNKSIYASI (Tuzatilgan va optimallashtirilgan)
-def get_ai_response(prompt, system_role):
-    if "GROQ_API_KEY" not in st.secrets:
-        return t["error"]
+# AI Funksiyasi
+def call_ai(prompt, role):
+    if "GROQ_API_KEY" not in st.secrets: return "API Key topilmadi!"
     try:
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-        completion = client.chat.completions.create(
+        res = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": system_role},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7
+            messages=[{"role": "system", "content": role}, {"role": "user", "content": prompt}]
         )
-        return completion.choices[0].message.content
-    except Exception as e:
-        return f"Xatolik yuz berdi: {str(e)}"
+        return res.choices[0].message.content
+    except Exception as e: return f"Xato: {e}"
 
-# 4. SIDEBAR
-with st.sidebar:
-    st.title(f"🌱 {t['title']}")
-    menu_choice = st.radio("Bo'limlar:", t['menu'])
-    st.markdown("---")
-    st.caption("Muallif: Prof. Egamberdiyev E.A.")
+# --- BO'LIMLAR ---
 
-# --- BO'LIMLAR MANTIQLARI ---
+# 1. AQI MAP
+if menu == t["menu"][0]:
+    st.components.v1.iframe("https://aqicn.org/map/world/", height=700)
 
-# AQI Map & Xaritalar (Xatolarsiz)
-if menu_choice == t['menu'][0]:
-    st.components.v1.iframe("https://aqicn.org/map/world/", height=750)
-
-elif menu_choice in [t['menu'][1], t['menu'][2]]:
-    st.header(menu_choice)
+# 2. CARBON & 3. ISSIQLIK XARITASI (Xatolarsiz)
+elif menu in [t["menu"][1], t["menu"][2]]:
+    st.header(menu)
     m = folium.Map(location=[41.31, 69.24], zoom_start=6)
     folium.TileLayer(tiles='https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', 
-                     attr='Google', name='Satellite').add_to(m)
+                     attr='Google Satellite', name='Google').add_to(m)
+    HeatMap([[41.3, 69.2, 0.9], [40.7, 72.3, 0.8]], radius=25).add_to(m)
     folium_static(m, width=1100)
 
-# AI AKADEMIK TAHLIL (4-bo'lim)
-elif menu_choice == t['menu'][3]:
-    st.header(t['menu'][3])
-    topic = st.text_input("Mavzu (Topic):", "Ecological problems in Aral Sea region")
-    if st.button(t['btn']):
-        with st.spinner(t['loading']):
-            role = f"Sen PhD darajasidagi ekologsan. Berilgan mavzuni {lang_code} tilida akademik va ilmiy tilda tahlil qilib ber."
-            result = get_ai_response(topic, role)
-            st.markdown("### 📄 AI Academic Result:")
-            st.write(result)
+# 4. AI AKADEMIK & 5. PESTEL
+elif menu in [t["menu"][3], t["menu"][4]]:
+    st.header(menu)
+    user_in = st.text_input("Mavzu:", "Climate Action 2030")
+    if st.button(t["btn"]):
+        with st.spinner("AI tahlil qilmoqda..."):
+            res = call_ai(user_in, f"Sen PhD darajasidagi ekspert ekologsan. {lang} tilida tahlil yoz.")
+            st.markdown(res)
 
-# PESTEL STRATEGIYA (5-bo'lim)
-elif menu_choice == t['menu'][4]:
-    st.header(t['menu'][4])
-    project = st.text_input("Loyiha yoki Hudud:", "Uzbekistan Green Energy 2030")
-    if st.button(t['btn']):
-        with st.spinner(t['loading']):
-            role = f"Sen strategik tahlilchisan. Berilgan loyihani {lang_code} tilida PESTEL (Political, Economic, Social, Technological, Environmental, Legal) tahlilini jadval ko'rinishida yozib ber."
-            result = get_ai_response(project, role)
-            st.markdown("### 🧠 PESTEL Strategy Analysis:")
-            st.write(result)
+# 6. IoT SENSORLAR (12 Viloyat + 20 Global)
+elif menu == t["menu"][5]:
+    st.header(menu)
+    st.subheader(t["iot_uz"])
+    uz_df = pd.DataFrame({'Hudud': ['Toshkent', 'Samarqand', 'Andijon', 'Buxoro', 'Nukus', 'Namangan', 'Fargona', 'Navoiy', 'Termiz', 'Jizzax', 'Guliston', 'Urganch'], 'AQI': [115, 82, 110, 88, 195, 105, 95, 78, 140, 72, 65, 80]})
+    st.bar_chart(uz_df.set_index('Hudud'))
+    st.subheader(t["iot_gl"])
+    gl_df = pd.DataFrame({'City': ['New York', 'London', 'Tokyo', 'Beijing', 'Cairo', 'Sydney', 'Paris', 'Dubai', 'Moscow', 'Delhi', 'Rio', 'Seoul', 'Berlin', 'Toronto', 'Lagos', 'Istanbul', 'Jakarta', 'Mexico City', 'Rome', 'Bangkok'], 'AQI': [42, 55, 62, 145, 130, 28, 45, 115, 60, 220, 52, 78, 40, 32, 165, 92, 150, 125, 48, 135]})
+    st.bar_chart(gl_df.set_index('City'))
 
-# IoT, Tarix va Chat (Qisqartirilgan mantiq)
-elif menu_choice == t['menu'][5]:
-    st.header(t['menu'][5])
-    uz_data = pd.DataFrame({'Hudud': ['Toshkent', 'Nukus', 'Andijon'], 'AQI': [115, 190, 75]})
-    st.plotly_chart(px.bar(uz_data, x='Hudud', y='AQI', color='AQI'))
+# 7. TARIXIY DINAMIKA
+elif menu == t["menu"][6]:
+    st.header(menu)
+    year = st.select_slider(t["year"], options=[2000, 2010, 2020, 2025])
+    img_url = "https://upload.wikimedia.org/wikipedia/commons/e/e0/Aral_Sea_1989-2014.jpg"
+    st.image(img_url, caption=f"Aral Sea - {year}", use_container_width=True)
 
-elif menu_choice == t['menu'][6]:
-    st.header(t['menu'][6])
-    st.image("https://upload.wikimedia.org/wikipedia/commons/e/e0/Aral_Sea_1989-2014.jpg", use_container_width=True)
-
-elif menu_choice == t['menu'][7]:
-    st.header(t['menu'][7])
-    if 'chat_history' not in st.session_state: st.session_state.chat_history = []
-    u_input = st.chat_input("Savol...")
-    if u_input:
-        ans = get_ai_response(u_input, "Ekspert maslahatchi.")
-        st.session_state.chat_history.append((u_input, ans))
-    for q, a in st.session_state.chat_history:
-        st.chat_message("user").write(q)
-        st.chat_message("assistant").write(a)
+# 8. AI CHAT
+elif menu == t["menu"][7]:
+    st.header(menu)
+    if 'msgs' not in st.session_state: st.session_state.msgs = []
+    if prompt := st.chat_input("Savol yozing..."):
+        st.session_state.msgs.append({"role": "user", "content": prompt})
+        ans = call_ai(prompt, "Expert maslahatchi.")
+        st.session_state.msgs.append({"role": "assistant", "content": ans})
+    for m in st.session_state.msgs:
+        with st.chat_message(m["role"]): st.write(m["content"])
