@@ -5,4 +5,3 @@ folium
 streamlit-folium
 streamlit-chat
 plotly
-reportlab
