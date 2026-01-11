@@ -8,64 +8,99 @@ from streamlit_folium import folium_static
 import json
 
 # 1. SAHIFA SOZLAMALARI
-st.set_page_config(page_title="Eko-Portal Predictive AI", layout="wide")
+st.set_page_config(page_title="Eko-Portal Global AI", layout="wide")
 
-# MAXFIY KALITLARNI FAQAT SECRETS'DAN OLAMIZ (Leak xavfi yo'q)
-# Secrets-ga GROQ_API_KEY qo'shilganiga ishonch hosil qiling!
-
+# Til sozlamalari
 lang = st.sidebar.selectbox("🌐 Til / Language", ["UZ", "EN", "RU"])
 t_dict = {
-    "UZ": {"m1": "🗺 Issiqlik Xaritasi", "m2": "🧠 PESTEL & Ssenariylar", "btn": "Strategik Tahlil"},
-    "EN": {"m1": "🗺 Heatmap Analysis", "m2": "🧠 PESTEL & Scenarios", "btn": "Strategic Analysis"},
-    "RU": {"m1": "🗺 Тепловая карта", "m2": "🧠 PESTEL и Сценарии", "btn": "Стратегический анализ"}
+    "UZ": {
+        "m1": "🌡 Global Havo Sifati", 
+        "m2": "🛰 Sun'iy Yo'ldosh (Heatmap)", 
+        "m3": "🤖 AI Risk & Akademik Tahlil", 
+        "m4": "🧠 PESTEL & Strategiya", 
+        "m5": "📶 IoT Sensorlar",
+        "btn": "Tahlilni boshlash"
+    },
+    "EN": {
+        "m1": "🌡 Global Air Quality", 
+        "m2": "🛰 Satellite (Heatmap)", 
+        "m3": "🤖 AI Risk & Academic", 
+        "m4": "🧠 PESTEL & Strategy", 
+        "m5": "📶 IoT Sensors",
+        "btn": "Start Analysis"
+    }
 }
-t = t_dict[lang]
+# Til lug'atini tekshirish
+t = t_dict.get(lang, t_dict["UZ"])
 
-# 2. STRATEGIK AI FUNKSIYASI (Akademik va Iqtibosli)
-def get_strategic_analysis(prompt):
+# 2. STRATEGIK AI FUNKSIYASI (Secrets orqali xavfsiz)
+def get_ai_response(prompt, system_role):
     try:
-        # Kod ichida API kalit yozish taqiqlanadi!
-        client = Groq(api_key=st.secrets["GROQ_API_KEY"]) 
+        # Kalitlarni kodda yozmang! Streamlit Secrets-dan foydalaning
+        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": f"Sen PhD darajasidagi tahlilchisan. {lang} tilida PESTEL metodikasida va ssenariylar bilan javob ber."},
+                {"role": "system", "content": system_role},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.4
+            temperature=0.3
         )
         return completion.choices[0].message.content
     except Exception as e:
-        return f"Xatolik: API kalitni Streamlit Secrets'ga qo'shing!"
+        return f"Xatolik: API kalit topilmadi yoki xato."
 
-# 3. SIDEBAR
+# 3. SIDEBAR NAVIGATSIYA
 with st.sidebar:
-    st.title("🚀 Strategic AI")
-    menu = st.radio("Bo'limlar:", [t['m1'], t['m2']])
+    st.title("🚀 Eko-Portal Pro")
+    menu = st.radio("Bo'limni tanlang:", [t['m1'], t['m2'], t['m3'], t['m4'], t['m5']])
     st.markdown("---")
-    st.write("🎓 **Mualliflar:** Prof. Egamberdiyev E.A. | PhD Ataxo'jayev A.")
+    st.write("🎓 **Mualliflar:**")
+    st.caption("Prof. Egamberdiyev E.A. | PhD Ataxo'jayev A.")
 
-# --- ISSIQLIK XARITASI (Tuzatilgan versiya) ---
+# --- 1-BO'LIM: GLOBAL HAVO SIFATI ---
 if menu == t['m1']:
     st.header(t['m1'])
-    # ValueError xatosi 'attr' qo'shish bilan tuzatildi
+    st.components.v1.iframe("https://aqicn.org/map/world/", height=700)
+
+# --- 2-BO'LIM: ISSIQLIK XARITASI (Tuzatilgan) ---
+elif menu == t['m2']:
+    st.header(t['m2'])
     m = folium.Map(location=[41.31, 69.24], zoom_start=6)
+    # Attribution (attr) qo'shish orqali ValueError tuzatildi
     folium.TileLayer(
         tiles='https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', 
         attr='Google Satellite Imagery', 
         name='Satellite'
     ).add_to(m)
     
-    # Simulyatsiya qilingan issiqlik ma'lumotlari
     heat_data = [[41.31, 69.24, 0.9], [42.46, 59.61, 1.0], [37.22, 67.27, 0.8]]
     HeatMap(heat_data, radius=20, blur=15).add_to(m)
     folium_static(m, width=1100, height=600)
 
-# --- PESTEL & SSENARIYLAR ---
-elif menu == t['m2']:
-    st.header(t['m2'])
-    topic = st.text_input("Tahlil mavzusi:", "Orolbo'yi mintaqasining 2030-yilgacha bo'lgan ekologik ssenariylari")
+# --- 3-BO'LIM: AI RISK TAHLILI ---
+elif menu == t['m3']:
+    st.header(t['m3'])
+    topic = st.text_area("Tahlil uchun mavzu yoki ma'lumot kiriting:")
     if st.button(t['btn']):
-        with st.spinner("AI strategik tahlil o'tkazmoqda..."):
-            res = get_strategic_analysis(f"{topic} mavzusida PESTEL tahlil va 3 xil (optimistik, realistik, pessmistik) ssenariy yoz.")
+        with st.spinner("AI akademik tahlil tayyorlamoqda..."):
+            res = get_ai_response(topic, f"Sen PhD ekologsan. {lang} tilida akademik iqtiboslar bilan tahlil yoz.")
             st.markdown(res)
+
+# --- 4-BO'LIM: PESTEL STRATEGIYA ---
+elif menu == t['m4']:
+    st.header(t['m4'])
+    p_topic = st.text_input("Strategik mavzu:", "Orolbo'yi 2030")
+    if st.button("Strategik tahlil"):
+        with st.spinner("PESTEL tahlil qilinmoqda..."):
+            res = get_ai_response(f"{p_topic} uchun PESTEL tahlil va 3 ssenariy yoz.", "Sen strategik tahlilchisan.")
+            st.markdown(res)
+
+# --- 5-BO'LIM: IoT SENSORLAR ---
+elif menu == t['m5']:
+    st.header(t['m5'])
+    iot_df = pd.DataFrame({
+        'Hudud': ['Toshkent', 'Nukus', 'Termiz', 'Andijon'],
+        'AQI': [115, 190, 165, 70]
+    })
+    st.plotly_chart(px.bar(iot_df, x='Hudud', y='AQI', color='AQI', title="Havo Sifati (Sensorlar)"))
