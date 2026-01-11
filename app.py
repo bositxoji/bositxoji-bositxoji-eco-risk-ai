@@ -6,8 +6,8 @@ from streamlit_google_auth import Authenticate
 
 # --- 1. SOZLAMALAR ---
 # Google Cloud-dan olgan kalitlaringizni shu yerga qo'ying
-CLIENT_ID = "SIZNING_CLIENT_ID"
-CLIENT_SECRET = "SIZNING_CLIENT_SECRET"
+CLIENT_ID = "678094322826-hpgo6bjop4j18qkb83c5amm77v1h5c5p.apps.googleusercontent.com"
+CLIENT_SECRET = "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"
 
 st.set_page_config(page_title="Eko-Risk AI O'zbekiston", layout="wide")
 
@@ -88,3 +88,4 @@ if not st.session_state.get('connected'):
         auth.login()
 else:
     main()
+
