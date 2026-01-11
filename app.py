@@ -1,100 +1,99 @@
 import streamlit as st
-import folium
-from streamlit_folium import st_folium
 import google.generativeai as genai
 
-# 1. AI SOZLAMASI
+# 1. SAHIFA KONFIGURATSIYASI
+st.set_page_config(page_title="Eko-Risk AI Global", layout="wide")
+
+# AI Sozlamasi
 try:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
     model = genai.GenerativeModel('gemini-1.5-flash')
 except:
-    st.warning("AI kaliti aniqlanmadi, iltimos Secrets bo'limini tekshiring.")
+    st.warning("AI kalitini Secrets bo'limiga qo'shing.")
 
-# 2. SAHIFA DIZAYNI
-st.set_page_config(page_title="Eko-Risk Global Monitoring", layout="wide")
-
+# 2. DIZAYN (CSS)
 st.markdown("""
     <style>
     .stApp { background-color: #05070a; color: #ffffff; }
-    .news-card {
-        background: #111418; padding: 15px; border-radius: 10px;
-        border-left: 5px solid #00ff41; margin-bottom: 10px; cursor: pointer;
+    /* Menyu tugmasi dizayni */
+    [data-testid="stPopover"] { position: fixed; top: 15px; left: 15px; z-index: 1000; }
+    button[aria-haspopup="dialog"] { 
+        background-color: #00ff41 !important; color: black !important;
+        border-radius: 10px !important; font-weight: bold !important;
     }
-    .news-card:hover { background: #1c2128; }
+    /* Yangiliklar bloki */
+    .news-container {
+        background: #111418; padding: 20px; border-radius: 15px;
+        border: 1px solid #00ff41; height: 85vh; overflow-y: auto;
+    }
+    iframe { border-radius: 15px; border: 1px solid #30363d; }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. KIRISH TIZIMI
+# Session State boshqaruvi
 if 'auth' not in st.session_state: st.session_state.auth = False
-if 'selected_news' not in st.session_state: st.session_state.selected_news = None
+if 'active_news' not in st.session_state: st.session_state.active_news = None
 
+# 3. KIRISH EKRANI
 if not st.session_state.auth:
-    st.markdown("<h1 style='text-align:center;'>🌍 Eko-Risk AI Portal</h1>", unsafe_allow_html=True)
-    _, col, _ = st.columns([1, 1, 1])
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    _, col, _ = st.columns([1, 1.5, 1])
     with col:
-        if st.button("🔴 Google orqali kirish", use_container_width=True): st.session_state.auth = True; st.rerun()
-        if st.button("🔵 Facebook orqali kirish", use_container_width=True): st.session_state.auth = True; st.rerun()
-else:
-    # MENYU (3 ta nuqta)
-    with st.popover("☰"):
-        if st.button("🗺 Asosiy Xarita"): st.session_state.selected_news = None
-        st.markdown("---")
-        st.write("Tadqiqotchi: Ataxo'jayev Abdubositxo'ja")
+        st.markdown("<div style='text-align:center; background:#111418; padding:40px; border-radius:20px; border:1px solid #00ff41;'>", unsafe_allow_html=True)
+        st.title("🌍 Eko-Risk AI Portal")
+        st.write("Davom etish uchun tizimga kiring")
+        if st.button("🌐 Google Account orqali kirish", use_container_width=True):
+            st.session_state.auth = True; st.rerun()
+        if st.button("🔵 Facebook orqali kirish", use_container_width=True):
+            st.session_state.auth = True; st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    # EKRAN TAQSIMOTI
+# 4. ASOSIY INTERFEYS
+else:
+    # ☰ Menyu tugmasi
+    with st.popover("☰"):
+        if st.button("🗺 Global Xarita (Live)"): st.session_state.active_news = None
+        st.markdown("---")
+        st.write("🎓 **Loyiha Mualliflari:**")
+        st.caption("Prof. Egamberdiyev Elmurod A.")
+        st.caption("PhD Ataxo'jayev Abdubositxo'ja")
+        if st.button("🚪 Chiqish"): st.session_state.auth = False; st.rerun()
+
+    # Ekran taqsimoti
     left_col, right_col = st.columns([0.7, 0.3])
 
     with left_col:
-        if st.session_state.selected_news:
-            # Yangilikni to'liq o'qish bo'limi
-            news = st.session_state.selected_news
-            st.button("⬅️ Xaritaga qaytish")
+        if st.session_state.active_news:
+            # Yangilikni to'liq o'qish
+            news = st.session_state.active_news
+            st.button("⬅️ Xaritaga qaytish", on_click=lambda: st.session_state.__setitem__('active_news', None))
             st.header(news['title'])
-            st.caption(f"Sana: {news['date']}")
+            st.info(f"📅 Sana: {news['date']}")
             
             with st.spinner("AI tahlil qilmoqda..."):
-                prompt = f"{news['title']} mavzusida batafsil ilmiy tahlil va takliflar ber."
+                prompt = f"{news['title']} haqida risk analizi, tarixiy sabablar va takliflarni o'zbek tilida ilmiy tahlil qilib ber."
                 response = model.generate_content(prompt)
                 st.write(response.text)
             st.markdown("---")
-            st.caption("Manba: NASA va JST ma'lumotlari asosida AI tahlili.")
+            st.caption("Manba: NASA, JST va Sun'iy Intellekt tahlili.")
         else:
-            # AQICN uslubidagi xarita
-            st.subheader("🗺 Real-vaqtdagi Global Monitoring (AQI style)")
-            
-            # Xaritani yaratish (O'zbekiston markazda)
-            m = folium.Map(location=[41.311081, 69.240562], zoom_start=3, tiles="CartoDB dark_matter")
-            
-            # Namuna sifatida nuqtalar (aqicn.org dagi kabi)
-            locations = [
-                {"loc": [41.31, 69.24], "name": "Toshkent", "aqi": 155, "color": "red"},
-                {"loc": [55.75, 37.61], "name": "Moskva", "aqi": 42, "color": "green"},
-                {"loc": [48.85, 2.35], "name": "Parij", "aqi": 68, "color": "yellow"},
-                {"loc": [40.71, -74.00], "name": "Nyu-York", "aqi": 35, "color": "green"}
-            ]
-            
-            for l in locations:
-                folium.CircleMarker(
-                    location=l['loc'],
-                    radius=10,
-                    popup=f"{l['name']}: AQI {l['aqi']}",
-                    color=l['color'],
-                    fill=True,
-                    fill_color=l['color']
-                ).add_to(m)
-            
-            st_folium(m, width="100%", height=500)
-            st.info("💡 Nuqtalar ustiga bossangiz havo ko'rsatkichlari chiqadi.")
+            # aqicn.org saytini ulab qo'yish
+            st.subheader("🗺 Real-vaqtdagi Global Havo Monitoringi")
+            # aqicn.org xaritasi uchun iframe
+            st.components.v1.iframe("https://aqicn.org/map/world/", height=650, scrolling=True)
 
     with right_col:
+        st.markdown('<div class="news-container">', unsafe_allow_html=True)
         st.subheader("📰 Yangiliklar")
-        news_list = [
-            {"date": "11.01.2026", "title": "O'zbekistonda havo sifati pasayishi kutilmoqda"},
-            {"date": "10.01.2026", "title": "Yevropada yangi yashil energiya qonuni"},
-            {"date": "09.01.2026", "title": "Arktika muzliklarining AI datchiklari orqali tahlili"}
+        news_data = [
+            {"date": "11.01.2026", "title": "O'zbekistonda yangi eko-qonunchilik"},
+            {"date": "11.01.2026", "title": "Global isish: Rossiya muzliklari tahlili"},
+            {"date": "10.01.2026", "title": "AI datchiklari havo sifatini bashorat qilmoqda"},
+            {"date": "09.01.2026", "title": "Jahon okeani sathi ko'tarilishi bo'yicha hisobot"}
         ]
         
-        for n in news_list:
-            if st.button(f"📄 {n['date']}: {n['title']}", key=n['title'], use_container_width=True):
-                st.session_state.selected_news = n
+        for item in news_data:
+            if st.button(f"📌 {item['date']}\n{item['title']}", key=item['title'], use_container_width=True):
+                st.session_state.active_news = item
                 st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
