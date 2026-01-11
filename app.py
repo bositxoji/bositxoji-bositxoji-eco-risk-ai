@@ -3,120 +3,113 @@ import plotly.express as px
 import pandas as pd
 
 # 1. SAHIFA SOZLAMALARI
-st.set_page_config(page_title="Eko-Risk AI Platforma", layout="wide")
+st.set_page_config(page_title="Eko-Risk AI Pro", layout="wide")
 
-# Session State
+# Session State (Auth va Navigatsiya)
 if 'auth' not in st.session_state: st.session_state.auth = False
 if 'page' not in st.session_state: st.session_state.page = "Xarita"
+if 'selected_news' not in st.session_state: st.session_state.selected_news = None
 
-# 2. DIZAYN (YANGILIKLAR VA MENYU UCHUN)
+# 2. PROFESSIONAL DESIGN (CSS)
 st.markdown("""
     <style>
-    .stApp { background-color: #0b0e14; color: #ffffff; }
+    .stApp { background-color: #05070a; color: #ffffff; }
     
-    /* 3 TA NUQTA MENYUSI */
-    [data-testid="stPopover"] { position: fixed; top: 15px; left: 15px; z-index: 100000; }
+    /* MENYU TUGMASI - YORQIN VA KO'RINARLI */
+    [data-testid="stPopover"] { position: fixed; top: 20px; left: 20px; z-index: 1000000; }
     button[aria-haspopup="dialog"] { 
-        background-color: #00ff41 !important; color: black !important; 
-        border-radius: 50% !important; width: 50px !important; height: 50px !important;
-        font-weight: bold !important; border: 2px solid white !important;
+        background-color: #00ff41 !important; color: #000 !important; 
+        border-radius: 12px !important; width: 60px !important; height: 50px !important;
+        font-weight: bold !important; border: 2px solid #ffffff !important;
+        box-shadow: 0 0 15px rgba(0, 255, 65, 0.4);
     }
 
-    /* YANGILIKLAR BLOKI */
-    .news-container {
-        background: rgba(255, 255, 255, 0.05);
-        padding: 20px; border-radius: 15px;
-        border: 1px solid #1db954; height: 80vh; overflow-y: auto;
+    /* YANGILIKLAR BLOKI USLUBI */
+    .news-box {
+        background: #111418; padding: 15px; border-radius: 12px;
+        border: 1px solid #1db954; margin-bottom: 15px; cursor: pointer;
+        transition: 0.3s;
     }
-    .news-item {
-        border-bottom: 1px solid #333; padding: 10px 0;
-    }
-    .news-date { color: #00ff41; font-size: 12px; }
+    .news-box:hover { background: #1c2128; border-color: #00ff41; }
+    .news-date { color: #00ff41; font-family: monospace; }
+    
+    /* XARITA KONTEYNERI */
+    .main-map { border-radius: 20px; overflow: hidden; border: 1px solid #30363d; }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. KIRISH EKRANI (Google va Facebook)
+# 3. LOGIN INTERFEYSI
 if not st.session_state.auth:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
-    col_a, col_b, col_c = st.columns([1, 2, 1])
-    with col_b:
-        st.markdown("<div style='text-align:center; background:#161b22; padding:40px; border-radius:20px; border:1px solid #00ff41;'>", unsafe_allow_html=True)
-        st.title("🌍 Eko-Risk AI")
-        st.write("Platformaga kirish uchun tanlang:")
-        if st.button("🔴 Google orqali kirish", use_container_width=True):
+    col_l1, col_l2, col_l3 = st.columns([1, 1.5, 1])
+    with col_l2:
+        st.markdown("<div style='text-align:center; background:#111418; padding:50px; border-radius:25px; border:1px solid #00ff41;'>", unsafe_allow_html=True)
+        st.title("🌿 Eko-Risk AI Portal")
+        st.write("Xavfsiz kirish tizimi")
+        if st.button("🌐 Google Account orqali kirish", use_container_width=True):
             st.session_state.auth = True; st.rerun()
         if st.button("🔵 Facebook orqali kirish", use_container_width=True):
             st.session_state.auth = True; st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-# 4. ASOSIY INTERFEYS (KIRGANDAN SO'NG)
+# 4. ASOSIY PLATFORMA (KIRGANDAN SO'NG)
 else:
-    # MENYU (3 ta nuqta ichida)
-    with st.popover("⋮"):
-        st.subheader("Menyu")
-        if st.button("🗺 Butun dunyo xaritasi"): st.session_state.page = "Xarita"
-        if st.button("🌫 Havo muammolari"): st.session_state.page = "Havo"
-        if st.button("💧 Suv muammolari"): st.session_state.page = "Suv"
-        if st.button("🌡 Iqlim o'zgarishi"): st.session_state.page = "Iqlim"
+    # 3 TA NUQTA MENYUSI (Har doim ko'rinadi)
+    with st.popover("☰"):
+        st.subheader("Navigatsiya")
+        if st.button("🗺 Global Monitoring"): st.session_state.page = "Xarita"; st.session_state.selected_news = None
+        if st.button("🌫 Havo (Risk Analizi)"): st.session_state.page = "Havo"
+        if st.button("💧 Suv (Risk Analizi)"): st.session_state.page = "Suv"
+        if st.button("🌡 Iqlim O'zgarishi"): st.session_state.page = "Iqlim"
         st.markdown("---")
-        if st.button("📜 Sayt Nizomi"): st.session_state.page = "Nizom"
-        if st.button("🎓 Ixtirochilar"): st.session_state.page = "Ixtirochilar"
+        if st.button("📜 Platforma Nizomi"): st.session_state.page = "Nizom"
+        if st.button("🎓 Loyiha Mualliflari"): st.session_state.page = "Ixtirochilar"
         if st.button("🚪 Chiqish"): st.session_state.auth = False; st.rerun()
 
-    # EKRANNI 2 GA BO'LISH (70% va 30%)
-    left_col, right_col = st.columns([0.7, 0.3])
+    # EKRANNI BO'LISH
+    left_col, right_col = st.columns([0.65, 0.35])
 
     with left_col:
-        if st.session_state.page == "Xarita":
-            st.subheader("🗺 Global Ekologik Monitoring (Butun dunyo)")
-            # To'liq dunyo xaritasi (O'zbekiston va Rossiya markazda)
+        # AGAR YANGILIK TANLANMAGAN BO'LSA XARITA CHIQADI
+        if st.session_state.selected_news:
+            st.button("⬅️ Orqaga", on_click=lambda: st.session_state.__setitem__('selected_news', None))
+            st.header(st.session_state.selected_news['t'])
+            st.write(f"📅 Sana: {st.session_state.selected_news['d']}")
+            st.markdown(f"**AI Tahlili:** {st.session_state.selected_news['content']}")
+        
+        elif st.session_state.page == "Xarita":
+            st.subheader("🗺 Dunyo Davlatlari Ekologik Holati")
             df = px.data.gapminder().query("year==2007")
             fig = px.choropleth(df, locations="iso_alpha", color="lifeExp",
-                                hover_name="country", 
-                                projection="natural earth", # Butun dunyoni ko'rsatadi
+                                hover_name="country", projection="equirectangular",
                                 color_continuous_scale="Greens")
-            fig.update_layout(
-                template="plotly_dark", 
-                margin={"r":0,"t":0,"l":0,"b":0},
-                geo=dict(showframe=False, showcoastlines=True, projection_type='equirectangular')
-            )
+            fig.update_layout(template="plotly_dark", margin={"r":0,"t":0,"l":0,"b":0})
             st.plotly_chart(fig, use_container_width=True)
-            st.caption("ℹ️ Sichqonchani davlatlar ustiga olib boring. O'zbekiston va Rossiya to'liq kiritilgan.")
 
         elif st.session_state.page in ["Havo", "Suv", "Iqlim"]:
-            st.header(f"🔍 {st.session_state.page} Muammosi - AI Tahlili")
+            st.header(f"🔍 {st.session_state.page} Muammosi Tahlili")
             st.markdown(f"""
-            ### 📊 Risk Analizi
-            AI bashoratiga ko'ra, {st.session_state.page} xavfi global miqyosda ortib bormoqda.
-            
-            ### 📜 Tarix va Sabablar
-            Ushbu muammo oxirgi 50 yillik sanoatlashuv va ekotizimga bo'lgan antropogen ta'sir natijasidir.
-            
-            ### 💡 Takliflar va Yechimlar
-            1. Monitoring tizimini raqamlashtirish.
-            2. Qat'iy ekologik standartlarni joriy etish.
-            
-            **Manba:** Ma'lumotlar NASA va JST (World Health Organization) arxivlari asosida AI tomonidan tahlil qilindi.
+            **Risk Analizi:** AI ushbu sohada 82% lik o'sish xavfini aniqladi.
+            **Tarixi:** Sanoat inqilobidan so'ng ushbu ko'rsatkichlar keskin o'zgargan.
+            **Takliflar:** Raqamli monitoringni butun dunyo bo'ylab integratsiya qilish lozim.
             """)
 
         elif st.session_state.page == "Ixtirochilar":
-            st.subheader("🎓 Sayt Ixtirochilari")
-            st.info("**Rahbar:** Professor Egamberdiyev Elmurod Abduqodirovich\n\n**PhD Tadqiqotchi:** Ataxo'jayev Abdubositxo'ja")
+            st.subheader("🎓 Tadqiqotchi va Ixtirochilar")
+            st.success("**Professor:** Egamberdiyev Elmurod Abduqodirovich\n\n**PhD:** Ataxo'jayev Abdubositxo'ja")
 
     with right_col:
-        st.markdown('<div class="news-container">', unsafe_allow_html=True)
-        st.subheader("📰 Yangiliklar")
-        news_data = [
-            {"d": "11.01.2026", "t": "O'zbekistonda yangi eko-datchiklar o'rnatildi"},
-            {"d": "11.01.2026", "t": "Rossiya shimolida havo harorati kutilmaganda ko'tarildi"},
-            {"d": "10.01.2026", "t": "Jahon okeani sathi 2mm ga ko'tarilgani aniqlandi"},
-            {"d": "09.01.2026", "t": "AI yordamida suv toshqinlari bashorat qilinmoqda"}
+        st.subheader("📰 Yangiliklar Arvixi")
+        news_items = [
+            {"d": "11.01.2026", "t": "Orol bo'yi hududida AI monitoringi", "content": "AI datchiklari hududda sho'rlanish darajasi pasayganini ko'rsatdi."},
+            {"d": "11.01.2026", "t": "Global Isish: Yangi rekordlar", "content": "Dunyo okeani harorati kutilganidan 0.5 daraja yuqori."},
+            {"d": "10.01.2026", "t": "Yashil Energiya: Rossiya loyihalari", "content": "Rossiyaning shimoliy qismida yangi shamol elektr stansiyalari ishga tushdi."}
         ]
-        for n in news_data:
-            st.markdown(f"""
-            <div class="news-item">
-                <span class="news-date">{n['d']}</span><br>
-                <b>{n['t']}</b>
-            </div>
-            """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        
+        for item in news_items:
+            if st.button(f"📌 {item['d']} | {item['t']}", key=item['t'], use_container_width=True):
+                st.session_state.selected_news = item
+                st.rerun()
+
+    # FOOTER
+    st.markdown("<div style='text-align: right; color: #444; padding-top: 20px;'>by Abdubositxo'ja</div>", unsafe_allow_html=True)
