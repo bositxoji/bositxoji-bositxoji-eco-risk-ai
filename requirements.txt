@@ -3,5 +3,4 @@ groq
 pandas
 folium
 streamlit-folium
-streamlit-chat
 plotly
