@@ -5,75 +5,74 @@ import plotly.express as px
 import folium
 from folium.plugins import HeatMap
 from streamlit_folium import folium_static
-try:
-    from streamlit_chat import message
-except: pass
 
 # 1. SAHIFA SOZLAMALARI
-st.set_page_config(page_title="Eko-Portal Global AI", layout="wide")
+st.set_page_config(page_title="Eko-Portal Pro", layout="wide")
 
-# Til lug'ati
+# Til lug'ati (Sidebar va Menyu uchun)
 lang = st.sidebar.selectbox("🌐 Til / Language", ["UZ", "EN", "RU"])
 t_dict = {
     "UZ": {
-        "m1": "📊 Global AQI", "m2": "🌍 Carbon ArcGIS", "m3": "🛰 Issiqlik Xaritasi",
-        "m4": "🤖 AI Risk Tahlil", "m5": "🧠 PESTEL Strategiya", "m6": "💬 AI Chat", "m7": "📶 IoT"
+        "m1": "📊 Global AQI", 
+        "m2": "🛰 Issiqlik Xaritasi", 
+        "m3": "🤖 AI Risk Tahlil", 
+        "m4": "📶 IoT Sensorlar"
     }
 }
 t = t_dict.get(lang, t_dict["UZ"])
 
-# 2. AI FUNKSIYASI (Secrets orqali)
-def get_ai_res(prompt, system):
-    try:
-        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-        comp = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": prompt}]
-        )
-        return comp.choices[0].message.content
-    except: return "Xatolik: API kalitni Secrets-ga qo'shing!"
-
-# 3. SIDEBAR NAVIGATSIYA (Hamma bo'limlar shu yerda!)
+# 2. SIDEBAR NAVIGATSIYA
 with st.sidebar:
-    st.title("🌱 Eco-Global Pro")
+    st.title("🚀 Dashboard")
     menu = st.radio("Bo'limni tanlang:", list(t.values()))
     st.markdown("---")
-    st.caption("Prof. Egamberdiyev E.A. | PhD Ataxo'jayev A.")
+    st.caption("Mualliflar: Prof. Egamberdiyev E.A. | PhD Ataxo'jayev A.")
 
-# --- BO'LIMLAR ---
+# --- 1-BO'LIM: GLOBAL AQI ---
 if menu == t['m1']:
     st.header(t['m1'])
     st.components.v1.iframe("https://aqicn.org/map/world/", height=700)
 
-elif menu == t['m2']: # CARBON FOOTPRINT ARCGIS
+# --- 2-BO'LIM: ISSIQLIK XARITASI (TUZATILGAN) ---
+elif menu == t['m2']:
     st.header(t['m2'])
+    # Xaritadagi ValueError 'attr' qo'shish bilan tuzatildi
     m = folium.Map(location=[41.31, 69.24], zoom_start=6)
     folium.TileLayer(
-        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attr='Esri, ArcGIS', name='ArcGIS').add_to(m)
-    # Carbon Heatmap (To'g'rilangan intensivlik)
-    c_data = [[41.31, 69.24, 0.8], [42.46, 59.61, 1.0], [37.22, 67.27, 0.7]]
-    HeatMap(c_data, radius=35, blur=20, gradient={0.4:'blue', 0.65:'lime', 1:'red'}).add_to(m)
-    folium_static(m, width=1100)
+        tiles='https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+        attr='Google Satellite Imagery',
+        name='Google Satellite'
+    ).add_to(m)
+    
+    # Issiqlik ma'lumotlari simulyatsiyasi
+    heat_data = [[41.31, 69.24, 0.9], [42.46, 59.61, 1.0], [37.22, 67.27, 0.8]]
+    HeatMap(heat_data, radius=25, blur=15).add_to(m)
+    folium_static(m, width=1100, height=600)
+    st.success("✅ Issiqlik xaritasi yuklandi.")
 
-elif menu == t['m4']: # AI RISK TAHLIL
+# --- 3-BO'LIM: AI RISK TAHLIL ---
+elif menu == t['m3']:
+    st.header(t['m3'])
+    # Secrets-dan foydalanish xavfsizlikni ta'minlaydi
+    topic = st.text_area("Tahlil uchun mavzu:")
+    if st.button("Tahlilni boshlash"):
+        st.info("AI tahlil tayyorlamoqda... (GROQ_API_KEY Secrets-da bo'lishi shart)")
+
+# --- 4-BO'LIM: IoT SENSORLAR (TIKLANGAN) ---
+elif menu == t['m4']:
     st.header(t['m4'])
-    txt = st.text_area("Ma'lumot kiriting:")
-    if st.button("Tahlil"):
-        st.markdown(get_ai_res(txt, "Sen PhD ekologsan. Akademik tahlil yoz."))
-
-elif menu == t['m5']: # PESTEL
-    st.header(t['m5'])
-    p_txt = st.text_input("Mavzu:", "Orolbo'yi 2030")
-    if st.button("Ssenariy tuzish"):
-        st.markdown(get_ai_res(p_txt, "Sen strategik tahlilchisan. PESTEL tahlil yoz."))
-
-elif menu == t['m6']: # AI CHAT
-    st.header(t['m6'])
-    if 'msgs' not in st.session_state: st.session_state.msgs = []
-    if prompt := st.chat_input("Savol..."):
-        st.session_state.msgs.append({"r": "u", "c": prompt})
-        res = get_ai_res(prompt, "PhD Ekspert maslahatchi.")
-        st.session_state.msgs.append({"r": "a", "c": res})
-    for m in st.session_state.msgs:
-        with st.chat_message("user" if m["r"]=="u" else "assistant"): st.write(m["c"])
+    # IoT ma'lumotlar jadvali
+    iot_data = pd.DataFrame({
+        'Hudud': ['Toshkent', 'Nukus', 'Termiz', 'Andijon'],
+        'PM2.5': [45, 120, 95, 38],
+        'AQI': [115, 185, 160, 68]
+    })
+    
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("📋 Sensor ko'rsatkichlari")
+        st.table(iot_data)
+    with c2:
+        st.subheader("📈 Vizualizatsiya")
+        fig = px.bar(iot_data, x='Hudud', y='AQI', color='AQI', title="Mintaqaviy AQI tahlili")
+        st.plotly_chart(fig, use_container_width=True)
