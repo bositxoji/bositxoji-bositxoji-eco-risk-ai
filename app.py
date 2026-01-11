@@ -1,85 +1,109 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+import pydeck as pdk
+import numpy as np
+from datetime import datetime
 
-# 1. Sahifa sozlamalari
-st.set_page_config(page_title="Eko-Risk AI Platforma", layout="wide")
+# 1. SAHIFA SOZLAMALARI
+st.set_page_config(page_title="Eko-Risk Global AI", layout="wide")
 
-# Session State - Arxiv va Kirish holati
-if 'logged_in' not in st.session_state: st.session_state.logged_in = False
+# Session State
 if 'lang' not in st.session_state: st.session_state.lang = 'UZ'
-if 'archive' not in st.session_state: st.session_state.archive = []
+if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 
-# 2. DIZAYN (YASHIL EKO-USLUB)
+# 2. YUQORI DARARAJALI EKO-DIZAYN (CSS)
 st.markdown(f"""
     <style>
     .stApp {{
-        background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
-                          url("https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=2074&auto=format&fit=crop");
-        background-size: cover; background-attachment: fixed;
+        background-color: #050505;
+        color: #ffffff;
     }}
-    [data-testid="stPopover"] {{ position: fixed; top: 20px; left: 20px; z-index: 99999; }}
-    button[aria-haspopup="dialog"] {{ background-color: #065f46 !important; color: white !important; border: 2px solid #10b981 !important; border-radius: 10px !important; }}
-    .footer {{ position: fixed; right: 20px; bottom: 20px; color: white; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px; }}
+    /* 3 TA NUQTA MENYUSINI KO'RINARLI QILISH */
+    [data-testid="stPopover"] {{
+        position: fixed; top: 25px; left: 25px; z-index: 100000;
+    }}
+    button[aria-haspopup="dialog"] {{
+        background-color: #00FF41 !important; /* Matrix/Neon Green */
+        color: black !important;
+        font-weight: bold !important;
+        font-size: 24px !important;
+        border-radius: 50% !important;
+        width: 50px !important; height: 50px !important;
+        border: 3px solid #ffffff !important;
+    }}
+    /* Matnlar ko'rinishi */
+    h1, h2, h3, p {{
+        color: #00FF41 !important;
+        text-shadow: 0 0 10px rgba(0,255,65,0.5);
+    }}
+    .stTabs [data-baseweb="tab-list"] {{
+        background-color: rgba(0, 255, 65, 0.1);
+        border-radius: 10px;
+    }}
     </style>
-    <div class="footer">by Abdubositxo'ja</div>
     """, unsafe_allow_html=True)
 
-# 3. CHAP YASHIL MENYU
+# 3. INTERAKTIV GLOBUS MA'LUMOTLARI (Simulyatsiya)
+data = pd.DataFrame({
+    'lat': [41.2995, 51.5074, 40.7128, 35.6762, -33.8688, 55.7558],
+    'lon': [69.2401, -0.1278, -74.0060, 139.6503, 151.2093, 37.6173],
+    'city': ['Tashkent', 'London', 'New York', 'Tokyo', 'Sydney', 'Moscow'],
+    'temp': [12, 8, 4, 15, 28, -5],
+    'eco_risk': ['O\'rta', 'Past', 'Yuqori', 'O\'rta', 'Yuqori', 'O\'rta'],
+    'earthquake': ['3.2', '0', '1.2', '4.5', '0', '0.5']
+})
+
+# 4. CHAP YASHIL MENYU (3 TA NUQTA)
 with st.popover("⋮"):
-    st.write("🌐 Tilni tanlang")
-    c1, c2, c3 = st.columns(3)
-    if c1.button("UZ"): st.session_state.lang = 'UZ'; st.rerun()
-    if c2.button("RU"): st.session_state.lang = 'RU'; st.rerun()
-    if c3.button("EN"): st.session_state.lang = 'EN'; st.rerun()
+    st.subheader("⚙️ Boshqaruv")
+    lang = st.radio("Til / Язык", ["UZ", "RU", "EN"], horizontal=True)
+    st.session_state.lang = lang
+    
     st.markdown("---")
     if st.button("🎓 Muallif haqida"):
-        st.info("Professor Egamberdiyev E.A. boshchiligidagi jamoa. PhD tadqiqotchi: Ataxo'jayev Abdubositxo'ja.")
-    if st.button("🔑 Kirish / Chiqish"):
+        st.info("Professor Egamberdiyev E.A. va PhD tadqiqotchi Ataxo'jayev Abdubositxo'ja.")
+    
+    if st.button("🔑 Tizimga kirish/chiqish"):
         st.session_state.logged_in = not st.session_state.logged_in
         st.rerun()
 
-# 4. ASOSIY OYNA - YANGILIKLAR (HAR 2 SOATDA YANGILANADI)
-st.title("🌍 Global Ekologik Monitoring va AI")
+# 5. ASOSIY QISM
+st.title("🌍 Global Eko-Monitoring Real-Time AI")
 
-# Yangiliklar simulyatsiyasi (AI orqali internetdan qidirish prototipi)
-last_update = (datetime.now()).strftime("%H:00")
-st.subheader(f"📰 So'nggi Yangiliklar (Oxirgi yangilanish: {last_update})")
+# Globus qismi
+st.subheader("🗺 Interaktiv Yer shari (Davlatlar va Harorat)")
 
-news_data = [
-    {"mavzu": "Havo ifloslanishi", "xabar": "Toshkentda PM2.5 darajasi AI nazoratida.", "vaqt": "1 soat oldin"},
-    {"mavzu": "Atrof-muhit", "xabar": "Yangi ekologik filtrlar sanoat hududlariga o'rnatildi.", "vaqt": "2 soat oldin"}
-]
+view_state = pdk.ViewState(latitude=41.29, longitude=69.24, zoom=1.5, pitch=45)
 
-for n in news_data:
-    with st.expander(f"📌 {n['mavzu']} - {n['vaqt']}"):
-        st.write(n['xabar'])
+layer = pdk.Layer(
+    "ColumnLayer",
+    data,
+    get_position='[lon, lat]',
+    get_elevation='temp * 10000',
+    elevation_scale=100,
+    radius=200000,
+    get_fill_color="[temp > 20 ? 255 : 0, temp < 10 ? 255 : 150, 0, 140]",
+    pickable=True,
+    auto_highlight=True,
+)
 
-st.markdown("---")
+r = pdk.Deck(
+    layers=[layer],
+    initial_view_state=view_state,
+    tooltip={"text": "Shahar: {city}\nHarorat: {temp}°C\nEko-risk: {eco_risk}\nZilzila: {earthquake} ball"},
+    map_style="mapbox://styles/mapbox/satellite-v9"
+)
 
-# 5. KIRISH QILINGANDA OCHILADIGAN KATTA MA'LUMOTLAR
+st.pydeck_chart(r)
+
+# 6. DINAMIK YANGILIKLAR VA TAHLIL
 if st.session_state.logged_in:
-    tab1, tab2, tab3 = st.tabs(["🌫 Havo Tahlili", "🐾 Hayvonot olami", "📂 Maqolalar Arvixi"])
-    
-    with tab1:
-        st.subheader("🧪 Ifloslantiruvchi moddalar tasnifi")
-        pollutants = pd.DataFrame({
-            'Modda': ['PM2.5', 'CO2 (Karbonat angidrid)', 'NO2 (Azot dioksidi)', 'SO2 (Oltingugurt dioksidi)'],
-            'Tasnif': ['Kichik chang zarralari, nafas yo\'llariga kiradi', 'Asosiy issiqxona gazi, haroratni oshiradi', 'Transport chiqindisi, o\'pka uchun zararli', 'Sanoat chiqindisi, kislotali yomg\'irga sababchi'],
-            'Holat': ['⚠️ Yuqori', '✅ Me\'yorda', '🟡 O\'rtacha', '✅ Past']
-        })
-        st.table(pollutants)
-        
-    with tab2:
-        st.subheader("🦁 Hayvonlar va Atrof-muhit Muhofazasi")
-        st.write("AI Monitoringi: O'zbekiston hududidagi noyob turlar (Qoplon, Buxoro bug'usi) soni 3% ga oshgan.")
-        st.image("https://images.unsplash.com/photo-1564349683136-77e08bef1ef1?q=80&w=2070&auto=format&fit=crop", caption="Tabiat muhofazasi AI nazoratida")
-        
-    with tab3:
-        st.subheader("📚 Ilmiy Maqolalar va Ma'lumotlar Arvixi")
-        if st.button("AI orqali yangi maqola qidirish"):
-            new_art = f"Ekologik Tadqiqot #{len(st.session_state.archive)+1}: {datetime.now().date()}"
-            st.session_state.archive.append(new_art)
-        
-        for art in st.session_state.archive:
-            st.write(f"📄 {art}")
+    t1, t2 = st.tabs(["🔥 Favqulodda xabarlar", "📊 Batafsil Tahlil"])
+    with t1:
+        st.error(f"⚠️ {datetime.now().strftime('%H:%M')} - Yaponiya sohillarida 4.5 balli zilzila qayd etildi.")
+        st.warning("💨 Toshkent: Havo ifloslanishi me'yordan 1.2 barobar yuqori.")
+    with t2:
+        st.write("Havodagi zaharli moddalar (PM2.5) tahlili AI tomonidan amalga oshirilmoqda...")
+        st.line_chart(np.random.randn(20, 3))
+else:
+    st.info("Batafsil ma'lumotlar va AI tahlilini ko'rish uchun menyu (⋮) orqali tizimga kiring.")
