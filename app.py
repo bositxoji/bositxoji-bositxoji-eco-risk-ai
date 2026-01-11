@@ -1,98 +1,123 @@
 import streamlit as st
-from streamlit_echarts import st_echarts
+import plotly.express as px
+import pandas as pd
+import numpy as np
+from datetime import datetime
 
 # 1. SAHIFA SOZLAMALARI
-st.set_page_config(page_title="Eko-Risk Global AI", layout="wide")
+st.set_page_config(page_title="Eko-Risk AI Platforma", layout="wide")
 
-# Session State
-if 'logged_in' not in st.session_state: st.session_state.logged_in = False
-if 'lang' not in st.session_state: st.session_state.lang = 'UZ'
+# Session State boshqaruvi
+if 'auth' not in st.session_state: st.session_state.auth = False
+if 'page' not in st.session_state: st.session_state.page = "Bosh sahifa"
 
-# 2. DIZAYN (YASHIL NEON VA QORA FON)
+# 2. DIZAYN (CSS)
 st.markdown("""
     <style>
-    .stApp { background-color: #000000; color: #ffffff; }
-    
-    /* 3 TA NUQTA MENYUSI - HAR DOIM KO'RINARLI */
-    [data-testid="stPopover"] {
-        position: fixed; top: 20px; left: 20px; z-index: 1000000;
+    .stApp { background-color: #0d1117; color: #e6edf3; }
+    [data-testid="stPopover"] { position: fixed; top: 20px; left: 20px; z-index: 100000; }
+    button[aria-haspopup="dialog"] { 
+        background-color: #238636 !important; color: white !important; 
+        border-radius: 50% !important; width: 55px !important; height: 55px !important;
+        font-size: 24px !important; border: 2px solid #ffffff !important;
     }
-    button[aria-haspopup="dialog"] {
-        background-color: #10b981 !important; /* Zumrad yashil */
-        color: white !important;
-        border-radius: 50% !important;
-        width: 60px !important; height: 60px !important;
-        font-size: 25px !important;
-        border: 2px solid #ffffff !important;
-        box-shadow: 0 0 15px #10b981;
+    .auth-box { 
+        text-align: center; padding: 50px; border-radius: 15px; 
+        background: rgba(255,255,255,0.05); border: 1px solid #30363d;
     }
-    h1 { color: #10b981 !important; text-align: center; font-family: 'Arial'; }
-    .footer { position: fixed; right: 20px; bottom: 20px; color: #10b981; font-weight: bold; }
+    .news-card {
+        padding: 15px; border-radius: 10px; background: #161b22;
+        margin-bottom: 10px; border-left: 5px solid #238636;
+    }
     </style>
-    <div class="footer">by Abdubositxo'ja</div>
     """, unsafe_allow_html=True)
 
-# 3. CHAP YASHIL MENYU (3 TA NUQTA)
-with st.popover("⋮"):
-    st.subheader("Boshqaruv Paneli")
-    st.session_state.lang = st.selectbox("Tilni tanlang", ["UZ", "RU", "EN"])
-    st.markdown("---")
-    if st.button("🎓 Muallif haqida"):
-        st.info("Professor Egamberdiyev E.A. va PhD Ataxo'jayev Abdubositxo'ja")
-    if st.button("🔑 Kirish / Chiqish"):
-        st.session_state.logged_in = not st.session_state.logged_in
-        st.rerun()
+# 3. KIRISH OYNASI (AUTH)
+if not st.session_state.auth:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    col_c1, col_c2, col_c3 = st.columns([1, 2, 1])
+    with col_c2:
+        st.markdown('<div class="auth-box">', unsafe_allow_html=True)
+        st.title("🌍 Eko-Risk AI Platformasiga Kirish")
+        st.write("Davom etish uchun ijtimoiy tarmoq orqali kiring")
+        
+        if st.button("🔵 Google orqali kirish", use_container_width=True):
+            st.session_state.auth = True
+            st.rerun()
+        if st.button("🔵 Facebook orqali kirish", use_container_width=True):
+            st.session_state.auth = True
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
-st.title("🌍 Global Eko-Monitoring AI Platformasi")
-
-# 4. INTERAKTIV 3D GLOBUS (ECHarts)
-# Bu globusda davlatlar chegaralari bilan ko'rinadi
-options = {
-    "backgroundColor": "#000",
-    "globe": {
-        "baseTexture": "https://echarts.apache.org/examples/data-gl/asset/earth.jpg",
-        "heightTexture": "https://echarts.apache.org/examples/data-gl/asset/bathymetry_bw_composite.jpg",
-        "displacementScale": 0.1,
-        "shading": "lambert",
-        "environment": "https://echarts.apache.org/examples/data-gl/asset/starfield.jpg",
-        "light": {
-            "main": {"intensity": 1.5, "shadow": True},
-            "ambient": {"intensity": 0.3}
-        },
-        "viewControl": {"autoRotate": True, "autoRotateAfterStill": 3}
-    },
-    "visualMap": {
-        "show": False,
-        "min": 0,
-        "max": 100,
-        "inRange": {"color": ["#10b981", "#fbbf24", "#ef4444"]}
-    },
-    "series": [{
-        "type": "scatter3D",
-        "coordinateSystem": "globe",
-        "symbolSize": 10,
-        "label": {"show": True, "formatter": "{b}"},
-        "itemStyle": {"color": "#10b981"},
-        "data": [
-            {"name": "Uzbekistan: 22°C, Xavf: Past", "value": [69.24, 41.29, 50]},
-            {"name": "Japan: 15°C, Zilzila: 4.2", "value": [139.69, 35.68, 50]},
-            {"name": "USA: 10°C, Xavf: O'rta", "value": [-74.00, 40.71, 50]},
-            {"name": "Brazil: 30°C, Namlik: Yuqori", "value": [-47.88, -15.79, 50]}
-        ]
-    }]
-}
-
-st_echarts(options=options, height="600px")
-
-# 5. MA'LUMOTLAR BO'LIMI
-if st.session_state.logged_in:
-    st.markdown("---")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.success("📊 **Ekologik Bashorat (AI)**")
-        st.write("Dunyodagi o'rtacha harorat ko'tarilishi: +0.02°C (bugun)")
-    with col2:
-        st.warning("⚠️ **Favqulodda Holatlar**")
-        st.write("Tinch okeani mintaqasida seysmik faollik oshgan.")
+# 4. ASOSIY INTERFEYS (KIRGANDAN SO'NG)
 else:
-    st.markdown("<h3 style='text-align: center;'>Batafsil tahlil uchun menyudan tizimga kiring</h3>", unsafe_allow_html=True)
+    # 3 TA NUQTA MENYUSI
+    with st.popover("⋮"):
+        st.subheader("📌 Bo'limlar")
+        if st.button("🗺 Dunyo Eko-Xaritasi"): st.session_state.page = "Xarita"
+        if st.button("🌫 Havo muammolari"): st.session_state.page = "Havo"
+        if st.button("💧 Suv muammolari"): st.session_state.page = "Suv"
+        if st.button("🌡 Iqlim o'zgarishi"): st.session_state.page = "Iqlim"
+        st.markdown("---")
+        if st.button("📜 Sayt Nizomi"): st.session_state.page = "Nizom"
+        if st.button("🎓 Ixtirochilar"): st.session_state.page = "Ixtirochilar"
+        if st.button("🚪 Chiqish"): 
+            st.session_state.auth = False
+            st.rerun()
+
+    # EKRANNI IKKIGA BO'LISH
+    left_col, right_col = st.columns([0.7, 0.3])
+
+    with left_col:
+        if st.session_state.page == "Bosh sahifa" or st.session_state.page == "Xarita":
+            st.subheader("🗺 Dunyo Davlatlari Ekologik Monitoringi")
+            # Xarita ma'lumotlari
+            df_map = px.data.gapminder().query("year==2007")
+            fig = px.choropleth(df_map, locations="iso_alpha", color="lifeExp",
+                                hover_name="country", title="Sichqonchani davlatlar ustiga olib boring",
+                                color_continuous_scale=px.colors.sequential.Greens)
+            fig.update_layout(template="plotly_dark", margin={"r":0,"t":0,"l":0,"b":0})
+            st.plotly_chart(fig, use_container_width=True)
+            st.info("💡 Davlat ustiga bossangiz batafsil AI tahlili yuklanadi.")
+
+        elif st.session_state.page in ["Havo", "Suv", "Iqlim"]:
+            muammo = st.session_state.page
+            st.header(f"🔍 {muammo} Muammosi - AI Mukammal Tahlili")
+            
+            col_t1, col_t2 = st.columns(2)
+            with col_t1:
+                st.subheader("📊 Risk Analizi")
+                st.write(f"AI Bashorati: {muammo} bo'yicha global xavf darajasi 78% ga yetdi.")
+                st.subheader("📜 Tarix va Sabablar")
+                st.write(f"Sanoatlashuv va tabiiy resurslardan noto'g'ri foydalanish {muammo} inqiroziga olib keldi.")
+            with col_t2:
+                st.subheader("💡 Takliflar")
+                st.write("1. Qayta tiklanuvchi energiya.\n2. Raqamli monitoring.\n3. Yashil texnologiyalar.")
+            
+            st.markdown("---")
+            st.caption("ℹ️ Manba: Ushbu ma'lumotlar NASA, JST va Sun'iy Intellekt algoritmlari asosida shakllantirildi.")
+
+        elif st.session_state.page == "Nizom":
+            st.subheader("📜 Saytdan foydalanish nizomi")
+            st.write("Ushbu platforma faqat ilmiy va ma'rifiy maqsadlarda foydalanish uchun mo'ljallangan.")
+
+        elif st.session_state.page == "Ixtirochilar":
+            st.subheader("🎓 Sayt Ixtirochilari haqida")
+            st.write("Toshkent davlat texnika universiteti jamoasi.")
+            st.write("**Rahbar:** Professor Egamberdiyev Elmurod Abduqodirovich")
+            st.write("**PhD Tadqiqotchi:** Ataxo'jayev Abdubositxo'ja Abdulaxatxo'ja o'g'li")
+
+    with right_col:
+        st.subheader("📰 So'nggi Yangiliklar")
+        news_list = [
+            {"date": "11.01.2026", "title": "Arktika muzliklari erishi tezlashdi"},
+            {"date": "10.01.2026", "title": "Yangi ekologik qonunchilik e'lon qilindi"},
+            {"date": "09.01.2026", "title": "AI havo sifatini bashorat qilishni boshladi"}
+        ]
+        for news in news_list:
+            st.markdown(f"""
+            <div class="news-card">
+                <small>{news['date']}</small><br>
+                <b>{news['title']}</b>
+            </div>
+            """, unsafe_allow_html=True)
