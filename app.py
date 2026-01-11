@@ -2,64 +2,48 @@ import streamlit as st
 import google.generativeai as genai
 
 # 1. SAHIFA SOZLAMALARI
-st.set_page_config(page_title="Eko-Risk AI Global", layout="wide")
+st.set_page_config(page_title="Eko-Risk Global AI", layout="wide")
 
-# AI Konfiguratsiyasi
-try:
-    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-    model = genai.GenerativeModel('gemini-1.5-flash')
-except:
-    st.warning("AI kaliti topilmadi. Iltimos, Secrets-ni tekshiring.")
+# AI MODELINI SOZLASH (Xatolikni oldini olish uchun)
+def get_ai_response(prompt):
+    try:
+        genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+        # Eng barqaror model nomini ishlatamiz
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"AI tahlilida xatolik yuz berdi. Iltimos, API kalitini tekshiring. Xato: {str(e)}"
 
-# 2. DIZAYN (UNEP va aqicn.org uslubida)
+# 2. DIZAYN (AQICN va UNEP uslubida)
 st.markdown("""
     <style>
     .stApp { background-color: #05070a; color: #ffffff; }
     [data-testid="stPopover"] { position: fixed; top: 15px; left: 15px; z-index: 1000; }
-    button[aria-haspopup="dialog"] { 
-        background-color: #00ff41 !important; color: black !important;
-        border-radius: 10px !important; font-weight: bold !important;
+    .news-card {
+        background: #111418; padding: 15px; border-radius: 12px;
+        border-left: 5px solid #00ff41; margin-bottom: 12px;
     }
-    .news-container {
-        background: #111418; padding: 20px; border-radius: 15px;
-        border: 1px solid #00df61; height: 85vh; overflow-y: auto;
-    }
-    .source-tag {
-        font-size: 10px; background: #00df61; color: black;
-        padding: 2px 6px; border-radius: 4px; font-weight: bold;
-    }
-    iframe { border-radius: 15px; border: 1px solid #30363d; }
+    iframe { border-radius: 15px; border: 1px solid #30363d; background: white; }
     </style>
     """, unsafe_allow_html=True)
 
 if 'auth' not in st.session_state: st.session_state.auth = False
 if 'active_news' not in st.session_state: st.session_state.active_news = None
 
-# 3. KIRISH EKRANI
+# 3. KIRISH TIZIMI
 if not st.session_state.auth:
-    st.markdown("<br><br><br>", unsafe_allow_html=True)
-    _, col, _ = st.columns([1, 1.5, 1])
+    st.markdown("<br><br><div style='text-align:center;'><h1>🌍 Eko-Risk AI</h1><p>Xalqaro Monitoring Portali</p></div>", unsafe_allow_html=True)
+    _, col, _ = st.columns([1, 1, 1])
     with col:
-        st.markdown("<div style='text-align:center; background:#111418; padding:40px; border-radius:20px; border:1px solid #00ff41;'>", unsafe_allow_html=True)
-        st.title("🌍 Eko-Risk AI Portal")
-        st.write("Xalqaro Ekologik Monitoring Tizimi")
-        if st.button("🌐 Google Account orqali kirish", use_container_width=True):
+        if st.button("🌐 Kirish", use_container_width=True):
             st.session_state.auth = True; st.rerun()
-        if st.button("🔵 Facebook orqali kirish", use_container_width=True):
-            st.session_state.auth = True; st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
-
-# 4. ASOSIY INTERFEYS
 else:
-    # ☰ Menyu
+    # ☰ MENYU
     with st.popover("☰"):
-        if st.button("🗺 Global Xarita (Live)"): st.session_state.active_news = None
-        st.markdown("---")
-        st.write("🎓 **Loyiha Mualliflari:**")
-        st.caption("Prof. Egamberdiyev Elmurod A.")
-        st.caption("PhD Ataxo'jayev Abdubositxo'ja")
-        if st.button("📜 Platforma Nizomi"): st.info("Sayt nizomi ilmiy tahlil va ochiq ma'lumotlar qoidalariga asoslangan.")
-        if st.button("🚪 Chiqish"): st.session_state.auth = False; st.rerun()
+        if st.button("🗺 aqicn.org Xaritasi"): st.session_state.active_news = None
+        st.write("---")
+        st.caption("PhD Ataxo'jayev A.")
 
     left_col, right_col = st.columns([0.7, 0.3])
 
@@ -68,34 +52,28 @@ else:
             news = st.session_state.active_news
             st.button("⬅️ Xaritaga qaytish", on_click=lambda: st.session_state.__setitem__('active_news', None))
             st.header(news['title'])
-            st.markdown(f"<span class='source-tag'>{news['source']}</span> 📅 {news['date']}", unsafe_allow_html=True)
+            st.success(f"Manba: {news['source']} | Sana: {news['date']}")
             
-            with st.spinner("AI xalqaro hisobotni tahlil qilmoqda..."):
-                prompt = f"Ushbu xalqaro yangilik bo'yicha ({news['title']}) risk analizi, tarixiy sabablar va mintaqaviy takliflarni ilmiy tahlil qilib ber."
-                response = model.generate_content(prompt)
-                st.markdown(f"### 🤖 AI Tahlili\n{response.text}")
-            st.markdown("---")
-            st.caption(f"Ma'lumotlar {news['source']} rasmiy manbalari asosida taqdim etildi.")
+            with st.spinner("AI xalqaro hisobotni o'zbek tiliga o'girmoqda va tahlil qilmoqda..."):
+                analysis = get_ai_response(f"{news['source']} tashkilotining '{news['title']}' xabari bo'yicha ilmiy tahlil va O'zbekiston uchun tavsiyalar ber.")
+                st.markdown(analysis)
         else:
-            # aqicn.org xaritasi
-            st.subheader("🗺 Dunyo Havo Sifati (Real-Vaqt)")
-            st.components.v1.iframe("https://aqicn.org/map/world/", height=650, scrolling=True)
+            st.subheader("🗺 Real-vaqtdagi Dunyo Havo Sifati (AQICN)")
+            # aqicn.org xaritasi integratsiyasi
+            st.components.v1.iframe("https://aqicn.org/map/world/", height=700, scrolling=True)
 
     with right_col:
-        st.markdown('<div class="news-container">', unsafe_allow_html=True)
         st.subheader("🌐 Global Xabarlar")
-        
-        # Xalqaro Eko saytlar xabarlari (Simulyatsiya)
-        news_data = [
+        news_items = [
             {"source": "UNEP", "date": "11.01.2026", "title": "Global plastik ifloslanishiga qarshi yangi pakt"},
-            {"source": "WMO", "date": "11.01.2026", "title": "2025-yil tarixdagi eng issiq yil deb topildi"},
-            {"source": "IPCC", "date": "10.01.2026", "title": "Metan emissiyasini kamaytirish bo'yicha yangi hisobot"},
-            {"source": "GREENPEACE", "date": "10.01.2026", "title": "Okean ekotizimlarini himoya qilish loyihasi"},
-            {"source": "NASA", "date": "09.01.2026", "title": "Amazonka o'rmonlari qisqarishi monitoringi"}
+            {"source": "NASA", "date": "11.01.2026", "title": "Ozon qatlamidagi ijobiy o'zgarishlar monitoringi"},
+            {"source": "WMO", "date": "10.01.2026", "title": "Muzliklar erishi: Yangi xalqaro hisobot"},
+            {"source": "WHO", "date": "09.01.2026", "title": "Havo ifloslanishining salomatlikka ta'siri"}
         ]
         
-        for item in news_data:
-            if st.button(f"🌐 {item['source']}: {item['title']}", key=item['title'], use_container_width=True):
-                st.session_state.active_news = item
-                st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+        for item in news_items:
+            with st.container():
+                st.markdown(f"**{item['source']}** - {item['date']}")
+                if st.button(item['title'], key=item['title'], use_container_width=True):
+                    st.session_state.active_news = item
+                    st.rerun()
