@@ -3,55 +3,62 @@ import pandas as pd
 import numpy as np
 
 # 1. Sahifa sozlamalari
-st.set_page_config(page_title="Eko-Risk AI O'zbekiston", layout="wide")
+st.set_page_config(page_title="Eko-Risk AI", layout="wide")
 
-# 2. Tun va Kun funksiyasi uchun session state
-if 'theme' not in st.session_state:
-    st.session_state.theme = 'dark'
+# 2. TILLAR VA MATNLAR LUG'ATI
+if 'lang' not in st.session_state:
+    st.session_state.lang = 'UZ'
 
-def toggle_theme():
-    st.session_state.theme = 'light' if st.session_state.theme == 'dark' else 'dark'
-
-# 3. DINAMIK DIZAYN (CSS)
-# Orqa fonda harakatlanuvchi koinot videosi va ideal yashil sidebar
-theme_style = {
-    'dark': {
-        'bg_overlay': 'rgba(0, 0, 0, 0.7)',
-        'text_color': '#FFFFFF',
-        'sidebar_bg': '#1E3932' # To'q, ammo chiroyli yashil (Starbucks yashili kabi)
+content = {
+    'UZ': {
+        'title': "🌍 Global Ekologik Risklar va AI Tahlili",
+        'sidebar': "Boshqaruv Paneli",
+        'warning': "⚠️ Kirish uchun tugmani bosing.",
+        'welcome': "Xush kelibsiz!",
+        'login': "Google orqali kirish",
+        'logout': "Chiqish"
     },
-    'light': {
-        'bg_overlay': 'rgba(255, 255, 255, 0.5)',
-        'text_color': '#000000',
-        'sidebar_bg': '#2D5A27' # Biroq yorqinroq yashil
+    'RU': {
+        'title': "🌍 Глобальные экологические риски и ИИ анализ",
+        'sidebar': "Панель управления",
+        'warning': "⚠️ Пожалуйста, войдите в систему.",
+        'welcome': "Добро пожаловать!",
+        'login': "Войти через Google",
+        'logout': "Выйти"
+    },
+    'EN': {
+        'title': "🌍 Global Environmental Risks & AI Analysis",
+        'sidebar': "Control Panel",
+        'warning': "⚠️ Please log in to continue.",
+        'welcome': "Welcome!",
+        'login': "Login with Google",
+        'logout': "Logout"
     }
 }
 
-current = theme_style[st.session_state.theme]
+t = content[st.session_state.lang]
 
+# 3. TUN/KUN VA VIDEO FON (CSS)
 st.markdown(f"""
     <style>
-    /* Harakatlanuvchi video fon */
-    #myVideo {{
+    /* Harakatlanuvchi fon videosi */
+    #bgVideo {{
         position: fixed;
         right: 0; bottom: 0;
         min-width: 100%; min-height: 100%;
         z-index: -1;
+        filter: brightness(50%); /* Matnlar ko'rinishi uchun rasm biroz qoraytirilgan */
     }}
 
-    .stApp {{
-        background: {current['bg_overlay']};
+    /* Matnlar ko'rinishi uchun maxsus soya va oq rang */
+    .main .block-container h1, .main .block-container h2, .main .block-container p {{
+        color: white !important;
+        text-shadow: 2px 2px 4px #000000;
     }}
 
-    /* Sidebar dizayni - Siz so'ragan ideal yashil */
+    /* Sidebar - Siz so'ragan ideal yashil */
     [data-testid="stSidebar"] {{
-        background-color: {current['sidebar_bg']} !important;
-        border-right: 1px solid #4B5E52;
-    }}
-
-    /* Matn ranglari */
-    h1, h2, h3, p, span, label {{
-        color: {current['text_color']} !important;
+        background-color: #1E3932 !important;
     }}
 
     /* Footer - Abdubositxo'ja */
@@ -61,53 +68,50 @@ st.markdown(f"""
         bottom: 20px;
         color: white;
         font-weight: bold;
-        background: rgba(0,0,0,0.5);
+        background: rgba(0,0,0,0.7);
         padding: 5px 15px;
-        border-radius: 20px;
+        border-radius: 10px;
         z-index: 1000;
     }}
     </style>
 
-    <video autoplay muted loop id="myVideo">
-        <source src="https://v.ftcdn.net/02/91/52/35/700_F_291523533_V3Mv9RkSOfjP3X8A8wWc8Lp0Qz9B9F6l_ST.mp4" type="video/mp4">
+    <video autoplay muted loop playsinline id="bgVideo">
+        <source src="https://assets.mixkit.co/videos/preview/mixkit-rotating-earth-in-space-11119-large.mp4" type="video/mp4">
     </video>
-
+    
     <div class="footer">by Abdubositxo'ja</div>
     """, unsafe_allow_html=True)
 
-# 4. Sidebar elementlari
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/2913/2913520.png", width=80)
-st.sidebar.title("Boshqaruv")
+# 4. SIDEBAR - TILLARNI TANLASH
+st.sidebar.title(t['sidebar'])
 
-# Tun/Kun tugmasi
-mode_icon = "☀️ Kun" if st.session_state.theme == 'dark' else "🌙 Tun"
-if st.sidebar.button(mode_icon):
-    toggle_theme()
-    st.rerun()
+# Til tugmalari
+col_uz, col_ru, col_en = st.sidebar.columns(3)
+if col_uz.button("UZ"): st.session_state.lang = 'UZ'; st.rerun()
+if col_ru.button("RU"): st.session_state.lang = 'RU'; st.rerun()
+if col_en.button("EN"): st.session_state.lang = 'EN'; st.rerun()
+
+st.sidebar.markdown("---")
 
 # Login qismi
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
 
 if not st.session_state['logged_in']:
-    if st.sidebar.button("Google orqali kirish"):
+    if st.sidebar.button(t['login']):
         st.session_state['logged_in'] = True
         st.rerun()
 else:
-    st.sidebar.success("✅ Tizim faol")
-    if st.sidebar.button("Chiqish"):
+    st.sidebar.success(f"✅ {t['welcome']}")
+    if st.sidebar.button(t['logout']):
         st.session_state['logged_in'] = False
         st.rerun()
 
-# 5. Asosiy sahifa
-st.title("🌍 Global Ekologik Risklar va AI Tahlili")
+# 5. ASOSIY SAHIFA
+st.title(t['title'])
 
 if st.session_state['logged_in']:
-    st.write(f"### Hozirgi rejim: {st.session_state.theme.upper()}")
-    t1, t2 = st.tabs(["📊 Statistika", "🔬 AI Bashorat"])
-    with t1:
-        st.bar_chart(np.random.randn(10, 3))
-    with t2:
-        st.line_chart(np.random.randn(10, 2))
+    st.write(f"### {t['welcome']}")
+    # AI Bashorat va boshqa qismlar shu yerda bo'ladi
 else:
-    st.warning("⚠️ Kirish uchun chap paneldagi tugmani bosing.")
+    st.warning(t['warning'])
