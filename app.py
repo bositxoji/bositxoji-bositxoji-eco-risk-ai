@@ -12,7 +12,9 @@ CLIENT_SECRET = "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"
 st.set_page_config(page_title="Eko-Risk AI O'zbekiston", layout="wide")
 
 # Google Auth sozlamasi
+# Google Auth sozlamasi - Yangi versiya uchun to'g'ri format
 auth = Authenticate(
+    secret_key="biror_ixtiyoriy_maxfiy_soz", # Bu ixtiyoriy matn bo'lishi shart
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
     redirect_uri="https://eko-risk-ai-uz.streamlit.app",
@@ -88,4 +90,5 @@ if not st.session_state.get('connected'):
         auth.login()
 else:
     main()
+
 
