@@ -1,16 +1,13 @@
 import streamlit as st
 from streamlit_google_auth import Authenticate
 
-# Sozlamalar
 st.set_page_config(page_title="Eko-Risk AI O'zbekiston", layout="wide")
 
-# Google Auth - Yangi versiya formati
+# YANGI FORMAT: client_id o'rniga faqat secrets orqali ulanadi
 auth = Authenticate(
-    client_id=st.secrets["CLIENT_ID"],
-    client_secret=st.secrets["CLIENT_SECRET"],
-    redirect_uri="https://eko-risk-ai-uz.streamlit.app",
     cookie_name="google_auth_cookie",
-    cookie_key="ixtiyoriy_matn_123", # secret_key o'rniga cookie_key ishlatiladi
+    cookie_key="ixtiyoriy_matn_123", # Bu sirli so'z
+    redirect_uri="https://eko-risk-ai-uz.streamlit.app",
 )
 
 # Login tekshiruvi
@@ -26,6 +23,4 @@ if st.session_state.get('connected'):
 else:
     auth.login()
 
-# Asosiy qism
 st.title("🌍 Global Ekologik Risklar va AI Tahlili")
-st.write("Tizimga muvaffaqiyatli kirdingiz!")
