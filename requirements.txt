@@ -3,3 +3,4 @@ google-generativeai
 pandas
 pydeck
 numpy
+streamlit-echarts
