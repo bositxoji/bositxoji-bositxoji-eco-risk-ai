@@ -4,23 +4,26 @@ import google.generativeai as genai
 # 1. SAHIFA SOZLAMALARI
 st.set_page_config(page_title="Eko-Risk Global AI", layout="wide")
 
-# AI MODELINI SOZLASH (Model nomini yangiladik)
+# AI MODELINI SOZLASH (Eng barqaror modelni tanlaymiz)
 def get_ai_response(prompt):
     try:
         genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-        # 'gemini-1.5-flash' o'rniga 'gemini-1.5-flash-latest' ishlatamiz
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        # 'gemini-1.5-flash' o'rniga eng kuchli 'gemini-1.5-pro' ni ishlatamiz
+        model = genai.GenerativeModel('gemini-1.5-pro')
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        return f"AI tahlilida xatolik: {str(e)}. Iltimos, API kaliti va model nomini tekshiring."
+        return f"AI tahlilida xatolik: {str(e)}. Iltimos, API kalitini tekshiring."
 
-# 2. DIZAYN (UNEP va aqicn.org uslubida)
+# 2. DIZAYN (Qora fon va yashil neon uslubi)
 st.markdown("""
     <style>
     .stApp { background-color: #05070a; color: #ffffff; }
-    [data-testid="stPopover"] { position: fixed; top: 15px; left: 15px; z-index: 1000; }
-    .stButton > button { background-color: #111418 !important; color: white !important; border: 1px solid #00ff41 !important; }
+    [data-testid="stHeader"] { background: rgba(0,0,0,0); }
+    .news-card {
+        background: #111418; padding: 15px; border-radius: 10px;
+        border: 1px solid #00ff41; margin-bottom: 10px;
+    }
     iframe { border-radius: 15px; border: 1px solid #30363d; background: white; }
     </style>
     """, unsafe_allow_html=True)
@@ -30,17 +33,19 @@ if 'active_news' not in st.session_state: st.session_state.active_news = None
 
 # 3. ASOSIY QISM
 if not st.session_state.auth:
-    st.markdown("<br><br><div style='text-align:center;'><h1>🌍 Eko-Risk AI Portal</h1><p>Xalqaro Monitoring</p></div>", unsafe_allow_html=True)
+    st.markdown("<br><br><div style='text-align:center;'><h1>🌍 Eko-Risk AI Portal</h1><p>Global Monitoring va Tahlil</p></div>", unsafe_allow_html=True)
     _, col, _ = st.columns([1, 1, 1])
     with col:
         if st.button("🚀 Platformaga kirish", use_container_width=True):
             st.session_state.auth = True; st.rerun()
 else:
-    # ☰ MENYU
-    with st.popover("☰"):
+    # ☰ MENYU (Chap tomonda)
+    with st.sidebar:
+        st.title("📌 Menyu")
         if st.button("🗺 aqicn.org Xaritasi"): st.session_state.active_news = None
-        st.write("---")
-        st.caption("PhD Ataxo'jayev A.")
+        st.markdown("---")
+        st.write("🎓 **Muallif:** PhD Ataxo'jayev A.")
+        if st.button("🚪 Chiqish"): st.session_state.auth = False; st.rerun()
 
     left_col, right_col = st.columns([0.7, 0.3])
 
@@ -54,12 +59,13 @@ else:
             st.header(news['title'])
             st.success(f"Manba: {news['source']} | Sana: {news['date']}")
             
-            with st.spinner("AI tahlil qilmoqda..."):
-                analysis = get_ai_response(f"{news['source']} tashkilotining '{news['title']}' xabari bo'yicha o'zbek tilida ilmiy tahlil va tavsiyalar ber.")
+            with st.spinner("AI tahlil qilmoqda (Gemini 1.5 Pro)..."):
+                # AI tahlili shu yerda ishlaydi
+                analysis = get_ai_response(f"{news['source']} tashkilotining '{news['title']}' xabari bo'yicha o'zbek tilida ilmiy tahlil bering.")
                 st.markdown(analysis)
         else:
             st.subheader("🗺 Real-vaqtdagi Dunyo Havo Sifati (AQICN)")
-            st.components.v1.iframe("https://aqicn.org/map/world/", height=700, scrolling=True)
+            st.components.v1.iframe("https://aqicn.org/map/world/", height=750, scrolling=True)
 
     with right_col:
         st.subheader("🌐 Global Xabarlar")
@@ -71,7 +77,8 @@ else:
         ]
         
         for item in news_items:
-            st.markdown(f"**{item['source']}** - {item['date']}")
-            if st.button(item['title'], key=item['title'], use_container_width=True):
-                st.session_state.active_news = item
-                st.rerun()
+            with st.container():
+                st.markdown(f"**{item['source']}** - {item['date']}")
+                if st.button(item['title'], key=item['title'], use_container_width=True):
+                    st.session_state.active_news = item
+                    st.rerun()
