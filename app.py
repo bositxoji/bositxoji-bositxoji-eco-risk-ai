@@ -15,11 +15,11 @@ st.set_page_config(page_title="Eko-Risk AI O'zbekiston", layout="wide")
 # Google Auth sozlamasi - Eng yangi va xatosiz format
 # Google Auth sozlamasi - Yangi kutubxona standarti
 auth = Authenticate(
-    secret_key="random_secret_string_123",
-    google_client_id=CLIENT_ID,
-    google_client_secret=CLIENT_SECRET,
+    client_id=CLIENT_ID,
+    client_secret=CLIENT_SECRET,
     redirect_uri="https://eko-risk-ai-uz.streamlit.app",
-    cookie_name="google_auth_cookie"
+    cookie_name="google_auth_cookie",
+    key="random_secret_string"
 )
 
 auth.check_authentification()
@@ -91,6 +91,7 @@ if not st.session_state.get('connected'):
         auth.login()
 else:
     main()
+
 
 
 
