@@ -1,48 +1,65 @@
 import streamlit as st
+from groq import Groq
 import pandas as pd
 import plotly.express as px
 import folium
 from streamlit_folium import folium_static
-from groq import Groq
 
-# 1. SAHIFA SOZLAMALARI VA GOOGLE VERIFICATION
+# ---------------------------------------------------------
+# 1. GOOGLE SEARCH CONSOLE TASDIQLASH (HTML FAYL USULI)
+# ---------------------------------------------------------
+# Google botlari uchun maxsus "eshtik"
+if "google19952789cd1d86.html" in st.query_params:
+    st.write("google-site-verification: google19952789cd1d86.html")
+    st.stop()
+
+# ---------------------------------------------------------
+# 2. SAYT SOZLAMALARI
+# ---------------------------------------------------------
 st.set_page_config(
     page_title="Eco-Portal Pro: Global Eko Risk Monitoring",
     page_icon="🌍",
     layout="wide"
 )
 
-# Google Search Console Meta Tag
-st.markdown('<meta name="google-site-verification" content="maybg4-LdPKEKS8plcTQclxsDBM6XX8lGzOQIwbv0W8" />', unsafe_allow_html=True)
-
-# 2. GROQ API SOZLAMASI
-if "GROQ_API_KEY" in st.secrets:
-    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-else:
-    st.error("Secrets bo'limiga 'GROQ_API_KEY' qo'shilmagan!")
+# ---------------------------------------------------------
+# 3. API VA SOZLAMALAR
+# ---------------------------------------------------------
+if "GROQ_API_KEY" not in st.secrets:
+    st.error("Xatolik: Secrets bo'limiga 'GROQ_API_KEY' kiritilmagan!")
     st.stop()
 
-# 3. TIL VA TRANSLATSIYA
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+# Tilni tanlash
 lang = st.sidebar.selectbox("🌐 Til / Language", ["UZ", "EN", "RU"])
 t_dict = {
     "UZ": {
         "title": "🌱 Eco-Portal Pro AI",
         "m1": "🌍 Global AQI (Jonli)", "m2": "🛰 Sun'iy Yo'ldosh", "m3": "🧪 AI Akademik Tahlil",
-        "m4": "📈 PESTEL Strategiya", "m5": "📊 IoT Sensorlar", "m6": "🔮 2030 Bashorat",
+        "m4": "📈 PESTEL Strategiya", "m5": "📊 IoT Sensorlar (12 viloyat)", "m6": "🔮 2030 Bashorat",
         "m7": "⏳ Tarixiy Dinamika", "m8": "🤖 AI Chat Ekspert",
-        "btn": "Tahlilni boshlash", "dl": "Yuklab olish"
+        "btn": "Tahlilni boshlash", "dl": "Hisobotni yuklab olish"
+    },
+    "EN": {
+        "title": "🌱 Eco-Portal Pro AI",
+        "m1": "🌍 Global AQI (Live)", "m2": "🛰 Satellite View", "m3": "🧪 AI Academic Analysis",
+        "m4": "📈 PESTEL Strategy", "m5": "📊 IoT Sensors", "m6": "🔮 2030 Forecast",
+        "m7": "⏳ Historical Dynamics", "m8": "🤖 AI Expert Chat",
+        "btn": "Run Analysis", "dl": "Download"
     }
 }
-# Boshqa tillar uchun default UZ ishlatiladi
 t = t_dict.get(lang, t_dict["UZ"])
 
-# 4. SIDEBAR MENU
+# ---------------------------------------------------------
+# 4. SIDEBAR VA NAVIGATSIYA
+# ---------------------------------------------------------
 st.sidebar.title(t["title"])
-menu = st.sidebar.radio("Bo'limlar:", list(t.values())[1:9])
+menu = st.sidebar.radio("Bo'limni tanlang:", list(t.values())[1:9])
 st.sidebar.markdown("---")
-st.sidebar.write("**Muallif:** Ataxojayev Abdubosit")
+st.sidebar.write(f"**Muallif:** Ataxojayev Abdubosit")
+st.sidebar.write(f"**Ilmiy rahbar:** Prof. Egamberdiyev E.A.")
 
-# AI Funksiyasi
 def call_ai(prompt, role):
     try:
         res = client.chat.completions.create(
@@ -51,12 +68,15 @@ def call_ai(prompt, role):
         )
         return res.choices[0].message.content
     except Exception as e:
-        return f"Xatolik yuz berdi: {e}"
+        return f"Xatolik: {e}"
 
-# 5. ASOSIY BO'LIMLAR LOGIKASI
+# ---------------------------------------------------------
+# 5. ASOSIY BO'LIMLAR
+# ---------------------------------------------------------
+
 if menu == t["m1"]:
     st.header(t["m1"])
-    st.components.v1.iframe("https://aqicn.org/map/world/", height=700) #
+    st.components.v1.iframe("https://aqicn.org/map/world/", height=650)
 
 elif menu == t["m2"]:
     st.header(t["m2"])
@@ -66,33 +86,26 @@ elif menu == t["m2"]:
 
 elif menu in [t["m3"], t["m4"]]:
     st.header(menu)
-    user_in = st.text_area("Mavzu:", "Iqlim o'zgarishi va O'zbekiston")
+    user_in = st.text_area("Mavzu:", "O'zbekistonda iqlim o'zgarishi tahlili")
     if st.button(t["btn"]):
         with st.spinner("AI tahlil qilmoqda..."):
-            res = call_ai(user_in, "Siz ekologiya bo'yicha PhD olimsiz.")
+            role = "PhD Scientist" if menu == t["m3"] else "Policy Analyst"
+            res = call_ai(user_in, f"Provide professional analysis in {lang}")
             st.markdown(res)
 
 elif menu == t["m5"]:
     st.header(t["m5"])
-    data = pd.DataFrame({'Shahar': ['Toshkent', 'Samarqand', 'Nukus'], 'AQI': [155, 85, 120]})
-    st.plotly_chart(px.bar(data, x='Shahar', y='AQI', color='AQI'))
-
-elif menu == t["m6"]:
-    st.header(t["m6"])
-    st.line_chart(pd.DataFrame({'Yil': [2024, 2030], 'Resurs': [100, 140]}).set_index('Yil'))
-
-elif menu == t["m7"]:
-    st.header(t["m7"])
-    st.image("https://upload.wikimedia.org/wikipedia/commons/e/e0/Aral_Sea_1989-2014.jpg")
+    df = pd.DataFrame({'Hudud': ['Toshkent', 'Samarqand', 'Nukus'], 'AQI': [115, 82, 195]})
+    st.plotly_chart(px.bar(df, x='Hudud', y='AQI', color='AQI', template="plotly_dark"))
 
 elif menu == t["m8"]:
     st.header(t["m8"])
-    if "messages" not in st.session_state: st.session_state.messages = []
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]): st.write(msg["content"])
+    if "msgs" not in st.session_state: st.session_state.msgs = []
+    for m in st.session_state.msgs:
+        with st.chat_message(m["role"]): st.write(m["content"])
     if p := st.chat_input("Savol bering..."):
-        st.session_state.messages.append({"role": "user", "content": p})
+        st.session_state.msgs.append({"role": "user", "content": p})
         with st.chat_message("user"): st.write(p)
-        ans = call_ai(p, "Ekologiya eksperti")
-        st.session_state.messages.append({"role": "assistant", "content": ans})
+        ans = call_ai(p, "Siz ekologiya mutaxassisiz.")
+        st.session_state.msgs.append({"role": "assistant", "content": ans})
         with st.chat_message("assistant"): st.write(ans)
