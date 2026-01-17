@@ -1,62 +1,34 @@
 import streamlit as st
-from groq import Groq
 import pandas as pd
-import plotly.express as px
-import folium
-from streamlit_folium import folium_static
+from groq import Groq
 
-# ---------------------------------------------------------
-# 1. GOOGLE SEARCH CONSOLE UCHUN IKKALAY USULNI HAM QO'SHAMIZ
-# ---------------------------------------------------------
+# 1. GOOGLE UCHUN ENG ISHONCHLI QISM (GTM)
+# Siz yuborgan koddagi haqiqiy GTM ID: GTM-52GRQSL
+gtm_code = """
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-52GRQSL');</script>
+"""
+st.markdown(gtm_code, unsafe_allow_html=True)
 
-# A. HTML FAYL USULI (Link orqali tekshirish uchun)
-if "google19952789cd1d86.html" in st.query_params:
-    st.write("google-site-verification: google19952789cd1d86.html")
-    st.stop()
-
-# B. META TAG USULI (Asosiy head qismi uchun)
-# Bu funksiya orqali biz Google-ga kerakli kodni majburlab ko'rsatamiz
-st.markdown('<p style="display:none;">google-site-verification: maybg4-LdPKEKS8plcTQclxsDBM6XX8lGzOQIwbv0W8</p>', unsafe_allow_html=True)
-
-# ---------------------------------------------------------
 # 2. SAYT KONFIGURATSIYASI
-# ---------------------------------------------------------
-st.set_page_config(
-    page_title="Eco-Portal Pro: Global Eko Risk Monitoring",
-    page_icon="🌍",
-    layout="wide"
-)
+st.set_page_config(page_title="Eco-Portal Pro AI", page_icon="🌍", layout="wide")
 
-# Secrets tekshiruvi
-if "GROQ_API_KEY" not in st.secrets:
+# Google verification uchun zaxira (Metatag)
+st.markdown('<meta name="google-site-verification" content="maybg4-LdPKEKS8plcTQclxsDBM6XX8lGzOQIwbv0W8" />', unsafe_allow_html=True)
+
+# API SOZLAMASI
+if "GROQ_API_KEY" in st.secrets:
+    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+else:
     st.error("GROQ_API_KEY topilmadi!")
     st.stop()
 
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+# 3. INTERFEYS
+st.title("🌱 Eco-Portal Pro AI")
+st.write("Google Search Console tasdiqlash rejimi faollashtirildi.")
 
-# ---------------------------------------------------------
-# 3. INTERFEYS (Sizning mavjud kodingiz)
-# ---------------------------------------------------------
-st.sidebar.title("🌱 Eco-Portal Pro AI")
-menu = st.sidebar.radio("Bo'limni tanlang:", ["🌍 Global AQI (Jonli)", "🤖 AI Chat Ekspert"])
-
-if menu == "🌍 Global AQI (Jonli)":
-    st.header("🌍 Global AQI (Jonli)")
-    st.components.v1.iframe("https://aqicn.org/map/world/", height=650)
-
-elif menu == "🤖 AI Chat Ekspert":
-    st.header("🤖 AI Chat Ekspert")
-    if "messages" not in st.session_state: st.session_state.messages = []
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]): st.write(msg["content"])
-    
-    if p := st.chat_input("Savol bering..."):
-        st.session_state.messages.append({"role": "user", "content": p})
-        with st.chat_message("user"): st.write(p)
-        res = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": p}]
-        )
-        ans = res.choices[0].message.content
-        st.session_state.messages.append({"role": "assistant", "content": ans})
-        with st.chat_message("assistant"): st.write(ans)
+# Xarita (Sizda ishlagan qism)
+st.components.v1.iframe("https://aqicn.org/map/world/", height=700)
